@@ -7,7 +7,13 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="胖阿瑶工作台">
 <meta name="theme-color" content="#FDF6F0">
-<title>🍞 胖阿瑶的工作台</title>
+<link rel="apple-touch-icon" sizes="180x180" href="logo-180.png">
+<link rel="apple-touch-icon" sizes="152x152" href="logo-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="logo-120.png">
+<link rel="apple-touch-icon" sizes="76x76" href="logo-76.png">
+<link rel="icon" type="image/png" sizes="192x192" href="logo-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="logo-512.png">
+<title>胖阿瑶的工作台</title>
 <style>
 /* ========== 全局变量 - 烘焙治愈风 ========== */
 :root {
@@ -77,6 +83,7 @@ body {
   width: 44px;
   height: 44px;
   border-radius: 50%;
+  object-fit: cover;
   background: linear-gradient(135deg, var(--primary-light), var(--pink));
   display: flex;
   align-items: center;
@@ -820,7 +827,7 @@ body {
 
 <!-- ========== 左侧图标导航栏 ========== -->
 <nav class="sidebar">
-  <div class="sidebar-avatar">🍞</div>
+  <img src="logo-512.png" class="sidebar-avatar" alt="胖阿瑶">
   <div class="sidebar-divider"></div>
   <div class="sidebar-nav">
     <button class="nav-btn active" data-view="dashboard">
