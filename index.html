@@ -1016,6 +1016,7 @@ body {
       <button class="baking-subtab active" data-baking-tab="recipes" onclick="switchBakingTab('recipes')">📓 配方库</button>
       <button class="baking-subtab" data-baking-tab="orders" onclick="switchBakingTab('orders')">📦 订单管理</button>
       <button class="baking-subtab" data-baking-tab="content" onclick="switchBakingTab('content')">📱 内容排期</button>
+      <button class="baking-subtab" data-baking-tab="cost" onclick="switchBakingTab('cost')">💰 成本核算</button>
     </div>
 
     <div id="baking-recipes">
@@ -1059,6 +1060,38 @@ body {
           <table class="data-table"><thead><tr><th>计划日期</th><th>平台</th><th>主题</th><th>配方关联</th><th>状态</th><th>操作</th></tr></thead>
           <tbody id="contentTableBody"></tbody></table>
         </div>
+      </div>
+    </div>
+
+    <div id="baking-cost" style="display:none">
+      <!-- 材料库 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🧾</span>材料库</div>
+          <button class="btn btn-primary btn-sm" onclick="openMaterialModal()">+ 新增材料</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table"><thead><tr><th>材料名称</th><th>规格</th><th>单位</th><th>单价(¥)</th><th>库存</th><th>操作</th></tr></thead>
+          <tbody id="materialTableBody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- 配方成本 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">💰</span>配方成本核算</div>
+          <button class="btn btn-primary btn-sm" onclick="openRecipeCostModal()">+ 新增核算</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table"><thead><tr><th>配方</th><th>材料明细</th><th>总成本</th><th>售价</th><th>利润</th><th>利润率</th><th>操作</th></tr></thead>
+          <tbody id="recipeCostTableBody"></tbody></table>
+        </div>
+      </div>
+
+      <!-- 成本汇总 -->
+      <div class="card">
+        <div class="card-title"><span class="icon">📊</span>成本汇总</div>
+        <div id="costSummary"></div>
       </div>
     </div>
   </div>
@@ -1206,6 +1239,8 @@ const DB = {
     recipes: [],
     orders: [],
     contents: [],
+    materials: [],
+    recipeCosts: [],
     examDate: '2026-11-01',
     weightRecords: [],
     weightGoal: { target: 60, targetDate: '', startWeight: null },
@@ -1228,6 +1263,9 @@ const DB = {
 };
 
 let appData = DB.load();
+// 兼容老数据：补上新字段
+if (!appData.materials) appData.materials = [];
+if (!appData.recipeCosts) appData.recipeCosts = [];
 let currentWorkDate = formatDate(new Date());
 
 // ========================================
@@ -1596,12 +1634,16 @@ function switchBakingTab(tab) {
   document.getElementById('baking-recipes').style.display = tab === 'recipes' ? '' : 'none';
   document.getElementById('baking-orders').style.display = tab === 'orders' ? '' : 'none';
   document.getElementById('baking-content').style.display = tab === 'content' ? '' : 'none';
+  document.getElementById('baking-cost').style.display = tab === 'cost' ? '' : 'none';
 }
 
 function renderBaking() {
   renderRecipes();
   renderOrders();
   renderContents();
+  renderMaterials();
+  renderRecipeCosts();
+  renderCostSummary();
 }
 
 function renderRecipes() {
@@ -1669,6 +1711,305 @@ function deleteRecipe(id) {
   if (!confirm('确定删除这个配方吗？')) return;
   appData.recipes = appData.recipes.filter(r => r.id !== id);
   save(); renderRecipes(); showToast('配方已删除');
+}
+
+// ========================================
+// 材料成本核算
+// ========================================
+const MATERIAL_UNITS = ['g','kg','ml','L','个','颗','包','袋','盒','块'];
+
+function renderMaterials() {
+  const tbody = document.getElementById('materialTableBody');
+  if (!tbody) return;
+  if (!appData.materials || appData.materials.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">🧾</div><p>材料库还是空的，先添加常用材料吧</p></div></td></tr>';
+    return;
+  }
+  const sorted = [...appData.materials].sort((a,b) => a.name.localeCompare(b.name, 'zh'));
+  tbody.innerHTML = sorted.map(m => `
+    <tr>
+      <td style="font-weight:600;">${escapeHtml(m.name)}</td>
+      <td>${m.spec || '-'}</td>
+      <td>${m.unit}</td>
+      <td style="color:var(--primary);font-weight:600;">¥${m.price.toFixed(2)}</td>
+      <td>${m.stock !== undefined ? m.stock + m.unit : '-'}</td>
+      <td>
+        <button class="btn btn-soft btn-sm" onclick="openMaterialModal('${m.id}')">编辑</button>
+        <button class="btn-icon-sm" onclick="deleteMaterial('${m.id}')">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openMaterialModal(id) {
+  const m = id ? appData.materials.find(x => x.id === id) : {};
+  showModal(`
+    <div class="modal-title">🧾 ${id?'编辑':'新增'}材料 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-group"><label>材料名称</label><input type="text" class="input" id="mName" value="${escapeHtml(m.name||'')}" placeholder="如：奶油奶酪"></div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2"><label>规格说明</label><input type="text" class="input" id="mSpec" value="${escapeHtml(m.spec||'')}" placeholder="如：250g/块"></div>
+      <div class="form-group" style="flex:1"><label>计量单位</label><select class="select" id="mUnit">${MATERIAL_UNITS.map(u=>`<option value="${u}" ${m.unit===u?'selected':''}>${u}</option>`).join('')}</select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>单价(¥/单位)</label><input type="number" class="input" id="mPrice" value="${m.price||''}" step="0.01" placeholder="如 25.00"></div>
+      <div class="form-group"><label>库存数量</label><input type="number" class="input" id="mStock" value="${m.stock!==undefined?m.stock:''}" step="0.1" placeholder="0"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveMaterial('${id||''}')">保存材料</button>
+  `);
+}
+
+function saveMaterial(id) {
+  const material = {
+    id: id || 'm' + Date.now(),
+    name: document.getElementById('mName').value.trim(),
+    spec: document.getElementById('mSpec').value.trim(),
+    unit: document.getElementById('mUnit').value,
+    price: parseFloat(document.getElementById('mPrice').value) || 0,
+    stock: parseFloat(document.getElementById('mStock').value) || 0,
+  };
+  if (!material.name) { showToast('请输入材料名称'); return; }
+  if (!appData.materials) appData.materials = [];
+  if (id) {
+    const idx = appData.materials.findIndex(x => x.id === id);
+    appData.materials[idx] = material;
+  } else {
+    appData.materials.push(material);
+  }
+  save(); closeModal(); renderMaterials(); renderRecipeCosts(); renderCostSummary();
+  showToast('材料已保存 ✓');
+}
+
+function deleteMaterial(id) {
+  if (!confirm('确定删除这个材料吗？')) return;
+  appData.materials = appData.materials.filter(m => m.id !== id);
+  save(); renderMaterials(); renderRecipeCosts(); renderCostSummary();
+  showToast('材料已删除');
+}
+
+function renderRecipeCosts() {
+  const tbody = document.getElementById('recipeCostTableBody');
+  if (!tbody) return;
+  if (!appData.recipeCosts || appData.recipeCosts.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">💰</div><p>还没有成本核算记录</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = appData.recipeCosts.map(rc => {
+    const totalCost = calcRecipeCost(rc);
+    const profit = (rc.price || 0) - totalCost;
+    const margin = totalCost > 0 ? ((profit / rc.price) * 100).toFixed(1) : '0.0';
+    const profitColor = profit >= 0 ? 'var(--success)' : 'var(--danger)';
+    const detailText = (rc.items || []).map(item => {
+      const mat = appData.materials?.find(m => m.id === item.materialId);
+      const matName = mat ? mat.name : '已删除';
+      return `${matName} ×${item.qty}${mat?.unit||''}`;
+    }).join('、');
+    return `
+      <tr>
+        <td style="font-weight:600;">${escapeHtml(rc.name)}</td>
+        <td style="font-size:12px;color:var(--text-soft);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(detailText || '无材料')}</td>
+        <td style="color:var(--primary);font-weight:600;">¥${totalCost.toFixed(2)}</td>
+        <td>¥${(rc.price||0).toFixed(2)}</td>
+        <td style="color:${profitColor};font-weight:600;">¥${profit.toFixed(2)}</td>
+        <td style="color:${profitColor};">${margin}%</td>
+        <td>
+          <button class="btn btn-soft btn-sm" onclick="openRecipeCostModal('${rc.id}')">编辑</button>
+          <button class="btn-icon-sm" onclick="deleteRecipeCost('${rc.id}')">🗑</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function calcRecipeCost(rc) {
+  if (!rc.items || !appData.materials) return 0;
+  return rc.items.reduce((sum, item) => {
+    const mat = appData.materials.find(m => m.id === item.materialId);
+    if (!mat) return sum;
+    return sum + mat.price * item.qty;
+  }, 0);
+}
+
+function openRecipeCostModal(id) {
+  const rc = id ? appData.recipeCosts.find(x => x.id === id) : { items: [] };
+  const materials = appData.materials || [];
+  if (materials.length === 0) {
+    showModal(`
+      <div class="modal-title">💰 新增核算 <button class="modal-close" onclick="closeModal()">✕</button></div>
+      <div class="empty-state"><div class="icon">🧾</div><p>请先在材料库中添加材料</p></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="closeModal();switchBakingTab('cost');">去添加材料</button>
+    `);
+    return;
+  }
+  const itemsHtml = (rc.items || []).map((item, i) => {
+    const mat = materials.find(m => m.id === item.materialId);
+    return `
+      <div class="cost-item-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
+        <select class="select cost-mat-select" data-idx="${i}" style="flex:1;min-width:100px;">
+          ${materials.map(m => `<option value="${m.id}" ${item.materialId===m.id?'selected':''}>${escapeHtml(m.name)}(¥${m.price}/${m.unit})</option>`).join('')}
+        </select>
+        <input type="number" class="input cost-qty-input" data-idx="${i}" value="${item.qty}" step="0.1" style="width:70px;" placeholder="用量">
+        <span class="cost-unit-label" data-idx="${i}" style="font-size:12px;color:var(--text-soft);">${mat?.unit||''}</span>
+        <button class="btn-icon-sm" onclick="removeCostItem(${i})">🗑</button>
+      </div>
+    `;
+  }).join('');
+
+  // 关联配方下拉
+  const recipeOptions = (appData.recipes || []).map(r => `<option value="${r.id}" ${rc.recipeId===r.id?'selected':''}>${escapeHtml(r.name)}</option>`).join('');
+
+  showModal(`
+    <div class="modal-title">💰 ${id?'编辑':'新增'}成本核算 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-group"><label>配方名称</label><input type="text" class="input" id="rcName" value="${escapeHtml(rc.name||'')}" placeholder="如：6寸伯爵红茶巴斯克"></div>
+    <div class="form-group"><label>关联配方（可选）</label><select class="select" id="rcRecipe"><option value="">不关联</option>${recipeOptions}</select></div>
+    <div class="section-title" style="margin-top:12px;">🥣 材料明细 <button class="btn btn-soft btn-sm" style="float:right;" onclick="addCostItem()">+ 添加材料</button></div>
+    <div id="costItemsContainer">${itemsHtml || '<p style="font-size:13px;color:var(--text-soft);">点击"+ 添加材料"开始核算</p>'}</div>
+    <div class="form-group" style="margin-top:12px;"><label>售价(¥)</label><input type="number" class="input" id="rcPrice" value="${rc.price||''}" step="0.01" placeholder="如 88.00"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveRecipeCost('${id||''}')">保存核算</button>
+  `);
+}
+
+let _tempCostItems = [];
+
+function addCostItem() {
+  // 保存当前表单中的材料明细
+  collectCostItems();
+  const materials = appData.materials || [];
+  if (materials.length === 0) { showToast('请先添加材料'); return; }
+  _tempCostItems.push({ materialId: materials[0].id, qty: 1 });
+  refreshCostItems();
+}
+
+function removeCostItem(idx) {
+  collectCostItems();
+  _tempCostItems.splice(idx, 1);
+  refreshCostItems();
+}
+
+function collectCostItems() {
+  _tempCostItems = [];
+  document.querySelectorAll('.cost-mat-select').forEach(sel => {
+    const idx = parseInt(sel.dataset.idx);
+    const qty = parseFloat(document.querySelector(`.cost-qty-input[data-idx="${idx}"]`).value) || 0;
+    _tempCostItems.push({ materialId: sel.value, qty });
+  });
+}
+
+function refreshCostItems() {
+  const container = document.getElementById('costItemsContainer');
+  if (!container) return;
+  const materials = appData.materials || [];
+  if (_tempCostItems.length === 0) {
+    container.innerHTML = '<p style="font-size:13px;color:var(--text-soft);">点击"+ 添加材料"开始核算</p>';
+    return;
+  }
+  container.innerHTML = _tempCostItems.map((item, i) => {
+    const mat = materials.find(m => m.id === item.materialId);
+    return `
+      <div class="cost-item-row" style="display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">
+        <select class="select cost-mat-select" data-idx="${i}" style="flex:1;min-width:100px;" onchange="updateCostUnit(${i})">
+          ${materials.map(m => `<option value="${m.id}" ${item.materialId===m.id?'selected':''}>${escapeHtml(m.name)}(¥${m.price}/${m.unit})</option>`).join('')}
+        </select>
+        <input type="number" class="input cost-qty-input" data-idx="${i}" value="${item.qty}" step="0.1" style="width:70px;" placeholder="用量">
+        <span class="cost-unit-label" data-idx="${i}" style="font-size:12px;color:var(--text-soft);min-width:20px;">${mat?.unit||''}</span>
+        <button class="btn-icon-sm" onclick="removeCostItem(${i})">🗑</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateCostUnit(idx) {
+  collectCostItems();
+  const mat = appData.materials.find(m => m.id === _tempCostItems[idx].materialId);
+  const label = document.querySelector(`.cost-unit-label[data-idx="${idx}"]`);
+  if (label && mat) label.textContent = mat.unit;
+}
+
+function saveRecipeCost(id) {
+  collectCostItems();
+  const name = document.getElementById('rcName').value.trim();
+  if (!name) { showToast('请输入配方名称'); return; }
+  const rc = {
+    id: id || 'rc' + Date.now(),
+    name: name,
+    recipeId: document.getElementById('rcRecipe').value || null,
+    items: _tempCostItems,
+    price: parseFloat(document.getElementById('rcPrice').value) || 0,
+  };
+  if (!appData.recipeCosts) appData.recipeCosts = [];
+  if (id) {
+    const idx = appData.recipeCosts.findIndex(x => x.id === id);
+    appData.recipeCosts[idx] = rc;
+  } else {
+    appData.recipeCosts.push(rc);
+  }
+  _tempCostItems = [];
+  save(); closeModal(); renderRecipeCosts(); renderCostSummary();
+  showToast('成本核算已保存 ✓');
+}
+
+function deleteRecipeCost(id) {
+  if (!confirm('确定删除这条成本核算吗？')) return;
+  appData.recipeCosts = appData.recipeCosts.filter(rc => rc.id !== id);
+  save(); renderRecipeCosts(); renderCostSummary();
+  showToast('已删除');
+}
+
+function renderCostSummary() {
+  const container = document.getElementById('costSummary');
+  if (!container) return;
+  const costs = appData.recipeCosts || [];
+  if (costs.length === 0) {
+    container.innerHTML = '<div class="empty-state" style="padding:20px;"><div class="icon">📊</div><p>添加成本核算后这里会显示汇总</p></div>';
+    return;
+  }
+  const totalCost = costs.reduce((s, rc) => s + calcRecipeCost(rc), 0);
+  const totalRevenue = costs.reduce((s, rc) => s + (rc.price || 0), 0);
+  const totalProfit = totalRevenue - totalCost;
+  const avgMargin = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(1) : '0.0';
+  const profitColor = totalProfit >= 0 ? 'var(--success)' : 'var(--danger)';
+
+  // 找出利润率最高和最低的
+  const withMargin = costs.map(rc => {
+    const cost = calcRecipeCost(rc);
+    const profit = (rc.price||0) - cost;
+    const margin = rc.price > 0 ? (profit/rc.price*100) : 0;
+    return { name: rc.name, cost, profit, margin, price: rc.price||0 };
+  });
+  const best = [...withMargin].sort((a,b) => b.margin - a.margin)[0];
+  const worst = [...withMargin].sort((a,b) => a.margin - b.margin)[0];
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;">
+      <div class="stat-card" style="text-align:center;padding:14px;background:var(--bg-soft);border-radius:12px;">
+        <div style="font-size:22px;font-weight:700;color:var(--primary);">¥${totalCost.toFixed(2)}</div>
+        <div style="font-size:12px;color:var(--text-soft);">总材料成本</div>
+      </div>
+      <div class="stat-card" style="text-align:center;padding:14px;background:var(--bg-soft);border-radius:12px;">
+        <div style="font-size:22px;font-weight:700;color:var(--info);">¥${totalRevenue.toFixed(2)}</div>
+        <div style="font-size:12px;color:var(--text-soft);">总售价</div>
+      </div>
+      <div class="stat-card" style="text-align:center;padding:14px;background:var(--bg-soft);border-radius:12px;">
+        <div style="font-size:22px;font-weight:700;color:${profitColor};">¥${totalProfit.toFixed(2)}</div>
+        <div style="font-size:12px;color:var(--text-soft);">总利润</div>
+      </div>
+      <div class="stat-card" style="text-align:center;padding:14px;background:var(--bg-soft);border-radius:12px;">
+        <div style="font-size:22px;font-weight:700;color:${profitColor};">${avgMargin}%</div>
+        <div style="font-size:12px;color:var(--text-soft);">平均利润率</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      ${best ? `<div style="padding:12px;background:var(--bg-soft);border-radius:12px;border-left:3px solid var(--success);">
+        <div style="font-size:12px;color:var(--text-soft);">🏆 利润率最高</div>
+        <div style="font-weight:600;margin:4px 0;">${escapeHtml(best.name)}</div>
+        <div style="font-size:13px;color:var(--success);">利润率 ${best.margin.toFixed(1)}%</div>
+      </div>` : ''}
+      ${worst ? `<div style="padding:12px;background:var(--bg-soft);border-radius:12px;border-left:3px solid var(--warning);">
+        <div style="font-size:12px;color:var(--text-soft);">⚠️ 利润率最低</div>
+        <div style="font-weight:600;margin:4px 0;">${escapeHtml(worst.name)}</div>
+        <div style="font-size:13px;color:var(--warning);">利润率 ${worst.margin.toFixed(1)}%</div>
+      </div>` : ''}
+    </div>
+  `;
 }
 
 function renderOrders() {
@@ -2029,7 +2370,7 @@ function generateWeeklyReport() {
       <div class="section-title">💼 工作</div><ul><li>本周共 ${workTotal} 项任务，已完成 ${workDone} 项，完成率 ${workRate}%</li><li>${workRate >= 80 ? '👍 完成率很高，保持！' : workRate >= 50 ? '💪 还需努力，继续加油' : '⚠️ 完成率偏低，注意调整节奏'}</li></ul>
       <div class="section-title">💳 收支</div><ul><li>本周收入 ¥${weekIncome.toFixed(0)} | 支出 ¥${weekExpense.toFixed(0)} | 存款 ¥${weekSave.toFixed(0)}</li><li>本周结余 ¥${(weekIncome - weekExpense).toFixed(0)} | 累计存款 ¥${totalSave.toFixed(0)}</li><li>${weekIncome - weekExpense >= 0 ? '👍 本周有结余，继续保持' : '⚠️ 本周支出大于收入，注意控制消费'}</li></ul>
       <div class="section-title">📚 备考</div><ul><li>本周学习总时长：${Math.round(studyMin/60*10)/10} 小时（${studyMin}分钟）</li><li>📖 经济基础：${sub1Logs.length} 次记录，当前进度 ${appData.studyProgress.sub1}%</li><li>🏗️ 建筑与房地产：${sub2Logs.length} 次记录，当前进度 ${appData.studyProgress.sub2}%</li><li>${studyMin >= 420 ? '👍 每天平均1小时以上，很好！' : studyMin > 0 ? '⚠️ 学习时长不足，建议每天至少1小时' : '⚠️ 本周尚未记录学习，尽快开始！'}</li></ul>
-      <div class="section-title">🧁 烘焙</div><ul><li>本周处理订单 ${weekOrders.length} 单</li><li>本周发布内容 ${weekContents.filter(c=>c.status==='done').length} 篇</li><li>配方库共 ${appData.recipes.length} 个配方</li></ul>
+      <div class="section-title">🧁 烘焙</div><ul><li>本周处理订单 ${weekOrders.length} 单</li><li>本周发布内容 ${weekContents.filter(c=>c.status==='done').length} 篇</li><li>配方库共 ${appData.recipes.length} 个配方</li><li>材料库 ${appData.materials?.length||0} 种材料</li><li>成本核算 ${appData.recipeCosts?.length||0} 个配方</li></ul>
       <div class="section-title">📌 下周重点</div><ul>${upcomingOrders.length > 0 ? `<li>📦 待交付订单 ${upcomingOrders.length} 单：${upcomingOrders.slice(0,3).map(o=>o.customer+'-'+o.product).join('、')}</li>` : ''}${upcomingContents.length > 0 ? `<li>📱 待发布内容 ${upcomingContents.length} 条</li>` : ''}<li>📚 经济基础目标进度：${Math.min(appData.studyProgress.sub1 + 10, 100)}%（+10%）</li><li>📚 建筑与房地产建议尽快开始第一轮学习</li><li>💳 继续记账，关注收支平衡</li>${upcomingOrders.length === 0 && upcomingContents.length === 0 ? '<li>暂无紧急待办，可以专注备考</li>' : ''}</ul>
     </div>
   `;
