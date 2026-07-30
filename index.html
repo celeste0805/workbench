@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="胖阿瑶工作台">
 <meta name="theme-color" content="#FDF6F0">
 <title>🍞 胖阿瑶的工作台</title>
 <style>
@@ -58,6 +59,7 @@ body {
   width: var(--sidebar-w);
   min-width: var(--sidebar-w);
   height: 100%;
+  padding-top: env(safe-area-inset-top);
   background: var(--bg-card);
   box-shadow: 2px 0 20px rgba(200, 140, 110, 0.12);
   z-index: 100;
@@ -165,6 +167,7 @@ body {
   flex: 1;
   width: calc(100% - var(--sidebar-w));
   min-width: 0;
+  padding-top: env(safe-area-inset-top);
   overflow-y: auto;
   overflow-x: hidden;
   padding: 16px;
