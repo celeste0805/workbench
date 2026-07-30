@@ -1,0 +1,2077 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#FDF6F0">
+<title>🍞 胖阿瑶的工作台</title>
+<style>
+/* ========== 全局变量 - 烘焙治愈风 ========== */
+:root {
+  --bg-main: #FDF6F0;
+  --bg-card: #FFFFFF;
+  --bg-soft: #FFF0E5;
+  --primary: #E88D6C;
+  --primary-light: #F7C5AD;
+  --primary-dark: #D4755A;
+  --accent: #E06A4E;
+  --text-main: #5D4037;
+  --text-soft: #8D6E63;
+  --text-light: #BCAAA4;
+  --border: #F0D5C0;
+  --success: #81C784;
+  --warning: #FFB74D;
+  --danger: #E57373;
+  --info: #64B5B6;
+  --pink: #F8BBD0;
+  --pink-light: #FCE4EC;
+  --shadow: 0 2px 12px rgba(200, 150, 120, 0.10);
+  --shadow-hover: 0 4px 20px rgba(200, 150, 120, 0.18);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --sidebar-w: 72px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.5;
+  display: flex;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ========== 左侧图标导航栏 ========== */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  height: 100%;
+  background: var(--bg-card);
+  box-shadow: 2px 0 20px rgba(200, 140, 110, 0.12);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  gap: 4px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sidebar-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-light), var(--pink));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(230, 120, 90, 0.25);
+  flex-shrink: 0;
+}
+
+.sidebar-divider {
+  width: 32px;
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0;
+  flex-shrink: 0;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.nav-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition: var(--transition);
+  color: var(--text-light);
+  font-size: 11px;
+  font-family: inherit;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-btn:hover { background: var(--bg-soft); color: var(--primary); }
+.nav-btn:active { transform: scale(0.92); }
+
+.nav-btn.active {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(210, 100, 70, 0.3);
+}
+
+.nav-btn .nav-icon { font-size: 20px; line-height: 1; }
+.nav-btn .nav-label { font-size: 10px; font-weight: 500; white-space: nowrap; }
+.nav-btn.active .nav-label { font-weight: 700; }
+
+.sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+.btn-icon-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  color: var(--text-light);
+}
+
+.btn-icon-sm:hover { background: var(--bg-soft); color: var(--primary); }
+
+/* ========== 主内容区 ========== */
+.main-content {
+  flex: 1;
+  width: calc(100% - var(--sidebar-w));
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.view { display: none; }
+.view.active { display: block; animation: fadeIn 0.35s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== 欢迎横幅 ========== */
+.welcome-banner {
+  background: linear-gradient(135deg, var(--primary), var(--pink));
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 4px 16px rgba(220, 120, 90, 0.2);
+}
+
+.welcome-text h2 { font-size: 20px; margin-bottom: 2px; font-weight: 700; }
+.welcome-text p { opacity: 0.85; font-size: 13px; }
+
+/* ========== 每日格言卡片 ========== */
+.daily-quote {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow);
+  border-left: 4px solid var(--primary);
+}
+
+.quote-emoji { font-size: 28px; flex-shrink: 0; }
+.quote-text { font-size: 14px; color: var(--text-soft); font-style: italic; }
+.quote-author { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+
+/* ========== 倒计时横幅 ========== */
+.countdown-bar {
+  background: linear-gradient(135deg, var(--info), #80CBC4);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 3px 12px rgba(100, 180, 180, 0.2);
+}
+
+.countdown-bar .countdown-num { font-size: 28px; font-weight: 800; }
+.countdown-bar .countdown-label { font-size: 12px; opacity: 0.9; }
+
+/* ========== 卡片 ========== */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  margin-bottom: 14px;
+  transition: var(--transition);
+}
+
+.card:hover { box-shadow: var(--shadow-hover); }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-title .icon { font-size: 20px; }
+
+/* ========== 仪表盘布局 ========== */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 700px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  :root { --sidebar-w: 60px; }
+  .nav-btn { width: 44px; height: 44px; border-radius: 12px; }
+  .nav-btn .nav-icon { font-size: 18px; }
+  .nav-btn .nav-label { font-size: 9px; }
+  .welcome-banner { padding: 16px 18px; }
+  .main-content { padding: 10px; }
+}
+
+@media (max-width: 430px) {
+  :root { --sidebar-w: 50px; }
+  .sidebar { padding: 10px 0; gap: 2px; }
+  .sidebar-avatar { width: 34px; height: 34px; font-size: 18px; margin-bottom: 6px; }
+  .sidebar-divider { width: 26px; margin: 4px 0; }
+  .nav-btn { width: 38px; height: 38px; border-radius: 10px; gap: 2px; }
+  .nav-btn .nav-icon { font-size: 16px; }
+  .nav-btn .nav-label { font-size: 8px; }
+  .btn-icon-sm { width: 32px; height: 32px; font-size: 14px; }
+  .main-content { padding: 8px; }
+  .card { padding: 12px; border-radius: 14px; }
+  .card-title { font-size: 15px; }
+
+  .form-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .form-row .form-group { flex: none !important; width: 100%; min-width: auto; }
+  .form-row .btn { width: 100%; }
+
+  .input-row { gap: 8px; }
+  .input-row .input,
+  .input-row .select { min-width: 0; }
+  .input-row .btn { flex: 0 0 auto; }
+}
+
+/* ========== 任务列表 ========== */
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-xs);
+  transition: var(--transition);
+  margin-bottom: 4px;
+}
+
+.task-item:hover { background: var(--bg-soft); }
+
+.task-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--primary-light);
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  font-size: 12px;
+  color: #fff;
+}
+
+.task-checkbox.checked { background: var(--success); border-color: var(--success); }
+.task-checkbox.checked::after { content: '✓'; }
+
+.task-text { flex: 1; font-size: 14px; }
+.task-text.done { text-decoration: line-through; color: var(--text-light); }
+
+.task-priority {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.priority-high { background: #FFEBEE; color: #C62828; }
+.priority-mid { background: #FFF3E0; color: #E65100; }
+.priority-low { background: #E8F5E9; color: #2E7D32; }
+
+.task-delete {
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--danger);
+  font-size: 14px;
+  transition: var(--transition);
+}
+
+.task-item:hover .task-delete { opacity: 0.5; }
+.task-delete:hover { opacity: 1; }
+
+/* ========== 表单元素 ========== */
+.input, .select, .textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-main);
+  background: var(--bg-card);
+  transition: var(--transition);
+  outline: none;
+}
+
+.input:focus, .select:focus, .textarea:focus { border-color: var(--primary); }
+.textarea { resize: vertical; min-height: 70px; }
+
+.btn {
+  padding: 9px 18px;
+  border: none;
+  border-radius: var(--radius-xs);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.btn:active { transform: scale(0.95); }
+
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-soft { background: var(--bg-soft); color: var(--primary-dark); }
+.btn-soft:hover { background: var(--primary-light); }
+.btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+.btn-outline:hover { background: var(--primary); color: #fff; }
+.btn-sm { padding: 5px 12px; font-size: 12px; }
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.form-group { flex: 1; min-width: 120px; }
+.form-group label { display: block; font-size: 12px; color: var(--text-soft); margin-bottom: 3px; font-weight: 600; }
+
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.input-row .input,
+.input-row .select {
+  flex: 0 1 auto;
+  min-width: 60px;
+}
+
+.input-row .btn { flex: 0 0 auto; }
+.input-row label { font-size: 12px; color: var(--text-soft); margin-right: 4px; }
+
+/* ========== 进度条 ========== */
+.progress-container {
+  background: var(--bg-soft);
+  border-radius: 20px;
+  height: 10px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius: 20px;
+  transition: width 0.6s ease;
+}
+
+.progress-bar.success { background: linear-gradient(90deg, var(--success), #AED581); }
+.progress-bar.info { background: linear-gradient(90deg, var(--info), #80CBC4); }
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-bottom: 3px;
+}
+
+/* ========== 标签/状态 ========== */
+.tag {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-pending { background: #FFF3E0; color: #E65100; }
+.status-progress { background: #E3F2FD; color: #1565C0; }
+.status-done { background: #E8F5E9; color: #2E7D32; }
+.status-cancel { background: #FFEBEE; color: #C62828; }
+
+/* ========== 表格 ========== */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 8px 10px;
+  background: var(--bg-soft);
+  color: var(--text-soft);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table tr:hover td { background: var(--bg-soft); }
+
+/* ========== 空状态 ========== */
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-light);
+}
+
+.empty-state .icon { font-size: 40px; margin-bottom: 6px; }
+.empty-state p { font-size: 14px; }
+
+/* ========== 统计卡片 ========== */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+}
+
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.stat-value { font-size: 26px; font-weight: 800; color: var(--primary); }
+.stat-label { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
+
+/* ========== 模态框 ========== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 200;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+
+.modal-overlay.show { display: flex; animation: fadeIn 0.2s ease; }
+
+.modal {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 24px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: var(--text-light);
+  padding: 0;
+  line-height: 1;
+}
+
+/* ========== 提醒列表 ========== */
+.reminder-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.reminder-item:last-child { border-bottom: none; }
+
+.reminder-date {
+  text-align: center;
+  min-width: 44px;
+  background: var(--bg-soft);
+  border-radius: 8px;
+  padding: 5px;
+}
+
+.reminder-day { font-size: 17px; font-weight: 700; color: var(--primary); }
+.reminder-month { font-size: 10px; color: var(--text-soft); }
+
+.reminder-info { flex: 1; }
+.reminder-title { font-size: 14px; font-weight: 600; }
+.reminder-desc { font-size: 12px; color: var(--text-soft); }
+
+.reminder-urgent { border-left: 3px solid var(--danger); padding-left: 8px; }
+
+/* ========== 配方卡片 ========== */
+.recipe-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.recipe-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+
+.recipe-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px; }
+.recipe-name { font-size: 16px; font-weight: 700; }
+.recipe-cat { font-size: 11px; color: var(--text-soft); margin-bottom: 6px; }
+.recipe-note { font-size: 13px; color: var(--text-soft); }
+
+/* ========== Toast 提示 ========== */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--text-main);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 24px;
+  font-size: 13px;
+  z-index: 300;
+  transition: transform 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+}
+
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ========== 分区标题 ========== */
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 16px 0 10px;
+  padding-left: 10px;
+  border-left: 3px solid var(--primary);
+}
+
+/* ========== 搜索栏 ========== */
+.search-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.search-bar .input { flex: 1; min-width: 160px; }
+
+/* ========== 日期选择 ========== */
+.date-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.date-nav .btn-soft { min-width: 32px; text-align: center; padding: 6px 10px; }
+
+.date-display {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  flex: 1;
+}
+
+/* ========== 周报 ========== */
+.weekly-report {
+  background: var(--bg-soft);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.weekly-report h3 { color: var(--primary-dark); margin-bottom: 10px; }
+.weekly-report ul { padding-left: 18px; }
+.weekly-report li { margin-bottom: 4px; font-size: 13px; }
+
+/* ========== 烘焙子标签 ========== */
+.baking-subtabs {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  margin-bottom: 14px;
+  overflow-x: auto;
+}
+
+.baking-subtab {
+  padding: 7px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 13px;
+  color: var(--text-soft);
+  white-space: nowrap;
+  user-select: none;
+  border: none;
+  background: var(--bg-soft);
+  font-family: inherit;
+}
+
+.baking-subtab:hover { background: var(--primary-light); color: var(--primary-dark); }
+.baking-subtab.active { background: var(--primary); color: #fff; font-weight: 600; }
+
+/* ========== 体重管理 ========== */
+.weight-today {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.weight-big { font-size: 48px; font-weight: 800; color: var(--primary); line-height: 1; }
+.weight-unit { font-size: 16px; color: var(--text-soft); }
+.weight-info { font-size: 13px; color: var(--text-soft); line-height: 1.7; }
+
+.weight-goal-bar {
+  background: var(--bg-soft);
+  border-radius: 20px;
+  height: 12px;
+  overflow: hidden;
+  margin: 3px 0;
+}
+
+.weight-goal-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius: 20px;
+  transition: width 0.6s ease;
+}
+
+.weight-chart {
+  display: flex;
+  gap: 4px;
+  align-items: flex-end;
+  height: 120px;
+  padding: 0 4px;
+}
+
+.weight-chart-bar {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+}
+
+.weight-chart-fill {
+  width: 100%;
+  max-width: 32px;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.5s ease;
+  min-height: 2px;
+}
+
+.weight-chart-date { font-size: 9px; color: var(--text-light); margin-top: 3px; }
+
+/* ========== 账单 ========== */
+.bill-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.bill-summary-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.bill-summary-card .amount { font-size: 24px; font-weight: 800; }
+.bill-summary-card .label { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
+.amount-income { color: var(--success); }
+.amount-expense { color: var(--danger); }
+.amount-save { color: var(--primary); }
+
+.category-chart { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.category-bar-wrap { flex: 1; min-width: 80px; }
+.category-bar-label { font-size: 11px; color: var(--text-soft); margin-bottom: 3px; display: flex; justify-content: space-between; }
+.category-bar-track { background: var(--bg-soft); border-radius: 5px; height: 7px; overflow: hidden; }
+.category-bar-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
+
+.transaction-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.transaction-item:last-child { border-bottom: none; }
+.transaction-type { font-size: 11px; padding: 2px 7px; border-radius: 5px; font-weight: 600; }
+.tx-buy { background: #FFEBEE; color: #C62828; }
+.tx-sell { background: #E8F5E9; color: #2E7D32; }
+
+/* ========== 滚动条美化 ========== */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--primary-light); border-radius: 4px; }
+
+.main-content::-webkit-scrollbar { width: 5px; }
+.main-content::-webkit-scrollbar-thumb { background: var(--primary-light); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ========== 左侧图标导航栏 ========== -->
+<nav class="sidebar">
+  <div class="sidebar-avatar">🍞</div>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-nav">
+    <button class="nav-btn active" data-view="dashboard">
+      <span class="nav-icon">🏠</span><span class="nav-label">首页</span>
+    </button>
+    <button class="nav-btn" data-view="work">
+      <span class="nav-icon">💼</span><span class="nav-label">工作</span>
+    </button>
+    <button class="nav-btn" data-view="study">
+      <span class="nav-icon">📚</span><span class="nav-label">备考</span>
+    </button>
+    <button class="nav-btn" data-view="baking">
+      <span class="nav-icon">🧁</span><span class="nav-label">烘焙</span>
+    </button>
+    <button class="nav-btn" data-view="weight">
+      <span class="nav-icon">⚖️</span><span class="nav-label">体重</span>
+    </button>
+    <button class="nav-btn" data-view="bills">
+      <span class="nav-icon">💳</span><span class="nav-label">账单</span>
+    </button>
+    <button class="nav-btn" data-view="stats">
+      <span class="nav-icon">📊</span><span class="nav-label">统计</span>
+    </button>
+  </div>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-bottom">
+    <button class="btn-icon-sm" onclick="exportData()" title="导出备份">📥</button>
+    <button class="btn-icon-sm" onclick="document.getElementById('importFile').click()" title="导入恢复">📤</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</nav>
+
+<!-- ========== 主内容区 ========== -->
+<div class="main-content">
+
+  <!-- ========== 首页仪表盘 ========== -->
+  <div class="view active" id="view-dashboard">
+    <div class="welcome-banner">
+      <div class="welcome-text">
+        <h2 id="greeting">👋 胖阿瑶，欢迎回来！</h2>
+        <p id="todayDate"></p>
+      </div>
+    </div>
+
+    <div class="daily-quote" id="dailyQuote"></div>
+
+    <div class="countdown-bar">
+      <div>
+        <div class="countdown-label">距经济师考试还有</div>
+        <div class="countdown-num" id="examCountdown">--</div>
+        <div style="font-size:12px;opacity:0.8;">天</div>
+      </div>
+      <div style="font-size:36px;">📚</div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">💼</span>今日工作待办</div>
+          <button class="btn btn-soft btn-sm" onclick="switchView('work')">详情 →</button>
+        </div>
+        <div id="dashWorkTasks"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📚</span>今日备考任务</div>
+          <button class="btn btn-soft btn-sm" onclick="switchView('study')">详情 →</button>
+        </div>
+        <div id="dashStudyTasks"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🧁</span>待处理订单</div>
+          <button class="btn btn-soft btn-sm" onclick="switchView('baking')">详情 →</button>
+        </div>
+        <div id="dashBakingOrders"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🔔</span>关键日期提醒</div>
+        </div>
+        <div id="dashReminders"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 工作管理 ========== -->
+  <div class="view" id="view-work">
+    <div class="card">
+      <div class="date-nav">
+        <button class="btn btn-soft" onclick="changeWorkDate(-1)">‹</button>
+        <div class="date-display" id="workDateDisplay"></div>
+        <button class="btn btn-soft" onclick="changeWorkDate(1)">›</button>
+        <button class="btn btn-outline btn-sm" onclick="setWorkDateToday()">今天</button>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group" style="flex:3">
+          <label>新增任务</label>
+          <input type="text" class="input" id="newWorkTask" placeholder="输入任务内容后回车..." onkeypress="if(event.key==='Enter')addWorkTask()">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label>优先级</label>
+          <select class="select" id="newWorkPriority">
+            <option value="high">🔴 高</option>
+            <option value="mid" selected>🟡 中</option>
+            <option value="low">🟢 低</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:0 0 auto; min-width:auto; align-self:flex-end;">
+          <button class="btn btn-primary" onclick="addWorkTask()">添加</button>
+        </div>
+      </div>
+
+      <div id="workTaskList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📈</span>本周完成情况</div>
+      <div id="workWeeklyStats"></div>
+    </div>
+  </div>
+
+  <!-- ========== 备考追踪 ========== -->
+  <div class="view" id="view-study">
+    <div class="dashboard-grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📖</span>经济基础</div>
+          <span class="tag status-progress" id="sub1Tag">进行中</span>
+        </div>
+        <div class="progress-label"><span>学习进度</span><span id="sub1Percent">30%</span></div>
+        <div class="progress-container"><div class="progress-bar" id="sub1Bar" style="width:30%"></div></div>
+        <div style="font-size:12px; color:var(--text-soft); margin-top:6px;">
+          <div>📊 已有备考资料 ✓</div>
+          <div id="sub1Info">已学 30%，继续加油！</div>
+        </div>
+        <div class="input-row">
+          <label>更新进度</label>
+          <input type="number" class="input" id="sub1Input" min="0" max="100" value="30" style="width:70px">
+          <span style="color:var(--text-soft);font-size:13px;">%</span>
+          <button class="btn btn-primary btn-sm" onclick="updateStudyProgress(1)">保存</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🏗️</span>建筑与房地产</div>
+          <span class="tag status-pending" id="sub2Tag">待开始</span>
+        </div>
+        <div class="progress-label"><span>学习进度</span><span id="sub2Percent">0%</span></div>
+        <div class="progress-container"><div class="progress-bar" id="sub2Bar" style="width:0%"></div></div>
+        <div style="font-size:12px; color:var(--text-soft); margin-top:6px;">
+          <div>📚 暂无资料，待购入</div>
+          <div id="sub2Info">进度 0%，尽快开始！</div>
+        </div>
+        <div class="input-row">
+          <label>更新进度</label>
+          <input type="number" class="input" id="sub2Input" min="0" max="100" value="0" style="width:70px">
+          <span style="color:var(--text-soft);font-size:13px;">%</span>
+          <button class="btn btn-primary btn-sm" onclick="updateStudyProgress(2)">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">✏️</span>学习记录</div>
+        <button class="btn btn-primary btn-sm" onclick="openStudyLogModal()">+ 记录</button>
+      </div>
+      <div id="studyLogList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">🎯</span>备考里程碑</div>
+      <div id="studyMilestones"></div>
+    </div>
+  </div>
+
+  <!-- ========== 烘焙管理 ========== -->
+  <div class="view" id="view-baking">
+    <div class="baking-subtabs">
+      <button class="baking-subtab active" data-baking-tab="recipes" onclick="switchBakingTab('recipes')">📓 配方库</button>
+      <button class="baking-subtab" data-baking-tab="orders" onclick="switchBakingTab('orders')">📦 订单管理</button>
+      <button class="baking-subtab" data-baking-tab="content" onclick="switchBakingTab('content')">📱 内容排期</button>
+    </div>
+
+    <div id="baking-recipes">
+      <div class="card">
+        <div class="search-bar">
+          <input type="text" class="input" id="recipeSearch" placeholder="搜索配方名称..." oninput="renderRecipes()">
+          <select class="select" id="recipeCatFilter" style="max-width:130px" onchange="renderRecipes()">
+            <option value="">全部分类</option>
+            <option value="蛋糕">蛋糕</option>
+            <option value="面包">面包</option>
+            <option value="饼干">饼干</option>
+            <option value="甜点">甜点</option>
+            <option value="其他">其他</option>
+          </select>
+          <button class="btn btn-primary" onclick="openRecipeModal()">+ 新增配方</button>
+        </div>
+        <div id="recipeList"></div>
+      </div>
+    </div>
+
+    <div id="baking-orders" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📦</span>订单列表</div>
+          <button class="btn btn-primary btn-sm" onclick="openOrderModal()">+ 新增订单</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table"><thead><tr><th>客户</th><th>产品</th><th>数量</th><th>交付日期</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="orderTableBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <div id="baking-content" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📱</span>内容发布排期</div>
+          <button class="btn btn-primary btn-sm" onclick="openContentModal()">+ 新增排期</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table"><thead><tr><th>计划日期</th><th>平台</th><th>主题</th><th>配方关联</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="contentTableBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 体重管理 ========== -->
+  <div class="view" id="view-weight">
+    <div class="dashboard-grid">
+      <div class="card">
+        <div class="card-title"><span class="icon">⚖️</span>今日体重</div>
+        <div class="weight-today">
+          <div>
+            <div style="display:flex; align-items: baseline; gap: 4px;">
+              <span class="weight-big" id="currentWeight">--</span><span class="weight-unit">kg</span>
+            </div>
+            <div class="weight-info" id="weightDate">今天还没记录</div>
+          </div>
+          <div style="flex:1; min-width:180px;">
+            <div class="progress-label"><span>目标：<span id="weightGoal">--</span> kg</span><span id="weightDiff">--</span></div>
+            <div class="weight-goal-bar"><div class="weight-goal-fill" id="weightGoalFill" style="width:50%"></div></div>
+          </div>
+        </div>
+        <div class="input-row">
+          <input type="number" class="input" id="newWeight" placeholder="如 65.0" step="0.1" style="width:120px">
+          <span style="color:var(--text-soft);font-size:13px;">kg</span>
+          <button class="btn btn-primary" onclick="recordWeight()">保存</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="icon">🎯</span>体重目标</div>
+        <div class="input-row">
+          <input type="number" class="input" id="goalWeightInput" step="0.1" placeholder="目标体重" style="width:110px">
+          <span style="color:var(--text-soft);font-size:13px;">kg</span>
+          <input type="date" class="input" id="goalWeightDate" style="width:140px; flex:1; min-width:120px;">
+          <button class="btn btn-primary" onclick="saveWeightGoal()">设定目标</button>
+        </div>
+        <div id="weightGoalInfo" style="font-size:12px; color:var(--text-soft); margin-top:6px;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📈</span>体重趋势（近30天）</div>
+      <div id="weightChartArea"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📋</span>历史记录</div>
+        <button class="btn btn-soft btn-sm" onclick="deleteWeightHistory()">清空记录</button>
+      </div>
+      <div id="weightHistoryList"></div>
+    </div>
+  </div>
+
+  <!-- ========== 账单管理 ========== -->
+  <div class="view" id="view-bills">
+    <div class="bill-summary" id="billSummary"></div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">✏️</span>快速记账</div>
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 auto; min-width:0;"><label>日期</label><input type="date" class="input" id="billDate" style="width:140px"></div>
+        <div class="form-group" style="flex:0 0 auto; min-width:0;"><label>类型</label>
+          <select class="select" id="billType" style="width:90px" onchange="updateBillCategoryOptions()">
+            <option value="income">💰 收入</option>
+            <option value="expense">💸 支出</option>
+            <option value="save">🏦 存款</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:2; min-width:120px;"><label>分类</label><select class="select" id="billCategory"></select></div>
+        <div class="form-group" style="flex:2; min-width:90px;"><label>金额(元)</label><input type="number" class="input" id="billAmount" placeholder="0.00" step="0.01"></div>
+        <div class="form-group" style="flex:3; min-width:120px;"><label>备注</label><input type="text" class="input" id="billNote" placeholder="如：工资、午餐外卖"></div>
+        <div class="form-group" style="flex:0 0 auto; min-width:0;"><button class="btn btn-primary" onclick="addBill()">记录</button></div>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card"><div class="card-title"><span class="icon">📊</span>本月支出分类</div><div id="expenseChart"></div></div>
+      <div class="card"><div class="card-title"><span class="icon">📊</span>本月收入来源</div><div id="incomeChart"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">🎯</span>存款目标</div>
+        <button class="btn btn-soft btn-sm" onclick="openSaveGoalModal()">设定目标</button>
+      </div>
+      <div class="progress-label"><span>存款进度</span><span id="saveGoalPercent">--</span></div>
+      <div class="progress-container"><div class="progress-bar success" id="saveGoalBar" style="width:0%"></div></div>
+      <div style="font-size:12px; color:var(--text-soft); margin-top:4px;" id="saveGoalInfo">请设定存款目标</div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📋</span>账单明细</div>
+        <select class="select" id="billMonthFilter" style="width:auto; display:inline;" onchange="renderBills()"><option value="">全部月份</option></select>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data-table"><thead><tr><th>日期</th><th>类型</th><th>分类</th><th>金额</th><th>备注</th><th>操作</th></tr></thead>
+        <tbody id="billTableBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 统计与周报 ========== -->
+  <div class="view" id="view-stats">
+    <div class="stat-grid" id="statGrid"></div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📋</span>自动周报</div>
+        <button class="btn btn-soft btn-sm" onclick="generateWeeklyReport()">🔄 刷新周报</button>
+      </div>
+      <div id="weeklyReportArea"></div>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card"><div class="card-title"><span class="icon">💼</span>工作完成率(近7天)</div><div id="workChart"></div></div>
+      <div class="card"><div class="card-title"><span class="icon">📚</span>学习时长(近7天)</div><div id="studyChart"></div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== 模态框 ========== -->
+<div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ========================================
+// 数据管理
+// ========================================
+const DB = {
+  default: {
+    workTasks: {},
+    studyProgress: { sub1: 30, sub2: 0 },
+    studyLogs: [],
+    studyMilestones: [
+      { id: 1, title: '经济基础第一轮完成', date: '2026-09-15', done: false },
+      { id: 2, title: '建筑与房地产第一轮完成', date: '2026-09-30', done: false },
+      { id: 3, title: '两科真题演练', date: '2026-10-20', done: false },
+      { id: 4, title: '考前冲刺复习', date: '2026-11-02', done: false },
+    ],
+    recipes: [],
+    orders: [],
+    contents: [],
+    examDate: '2026-11-01',
+    weightRecords: [],
+    weightGoal: { target: 60, targetDate: '', startWeight: null },
+    bills: [],
+    saveGoal: { target: 50000, current: 0 },
+  },
+
+  load() {
+    const saved = localStorage.getItem('workbench_data');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        return { ...this.default, ...data };
+      } catch(e) { return {...this.default}; }
+    }
+    return {...this.default};
+  },
+
+  save(data) { localStorage.setItem('workbench_data', JSON.stringify(data)); }
+};
+
+let appData = DB.load();
+let currentWorkDate = formatDate(new Date());
+
+// ========================================
+// 工具函数
+// ========================================
+function formatDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function formatDateChinese(dateStr) {
+  const d = new Date(dateStr);
+  const weekDays = ['周日','周一','周二','周三','周四','周五','周六'];
+  return `${d.getMonth()+1}月${d.getDate()}日 ${weekDays[d.getDay()]}`;
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 6) return '🌙 夜深了胖阿瑶，注意休息';
+  if (h < 9) return '🌅 早上好胖阿瑶，新的一天！';
+  if (h < 12) return '☀️ 上午好胖阿瑶，加油！';
+  if (h < 14) return '🍜 中午好胖阿瑶，记得吃饭';
+  if (h < 18) return '🌤️ 下午好胖阿瑶，继续努力';
+  if (h < 22) return '🌆 晚上好胖阿瑶，辛苦了';
+  return '🌙 晚上好胖阿瑶，放松一下';
+}
+
+function getDailyQuote() {
+  const quotes = [
+    { emoji: '🍞', text: '做面包的过程就是治愈自己的过程', author: '胖阿瑶' },
+    { emoji: '🌟', text: '努力会上瘾，尤其是尝到甜头之后', author: '' },
+    { emoji: '💪', text: '备考的日子很难熬，但未来的你会感谢现在拼命的自己', author: '' },
+    { emoji: '🧁', text: '生活就像烘焙，需要耐心和热爱', author: '胖阿瑶' },
+    { emoji: '📚', text: '学不下去的时候，想想拿到证书那天的喜悦', author: '' },
+    { emoji: '✨', text: '你现在的努力，都是未来惊喜的铺垫', author: '' },
+    { emoji: '🌸', text: '悄悄努力，然后惊艳所有人', author: '' },
+  ];
+  const dayIndex = new Date().getDate() % quotes.length;
+  return quotes[dayIndex];
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2,4); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function save() { DB.save(appData); }
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+// ========================================
+// 视图切换
+// ========================================
+function switchView(viewName) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + viewName).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.nav-btn[data-view="${viewName}"]`).classList.add('active');
+
+  if (viewName === 'dashboard') renderDashboard();
+  if (viewName === 'work') renderWorkTasks();
+  if (viewName === 'study') renderStudy();
+  if (viewName === 'baking') renderBaking();
+  if (viewName === 'weight') renderWeight();
+  if (viewName === 'bills') renderBills();
+  if (viewName === 'stats') renderStats();
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchView(btn.dataset.view));
+});
+
+// ========================================
+// 首页仪表盘
+// ========================================
+function renderDashboard() {
+  document.getElementById('greeting').textContent = getGreeting();
+  document.getElementById('todayDate').textContent = `今天是 ${formatDateChinese(formatDate(new Date()))}`;
+
+  const q = getDailyQuote();
+  document.getElementById('dailyQuote').innerHTML = `<div class="quote-emoji">${q.emoji}</div><div><div class="quote-text">"${q.text}"</div>${q.author ? `<div class="quote-author">— ${q.author}</div>` : ''}</div>`;
+
+  const examDate = new Date(appData.examDate);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const days = Math.ceil((examDate - today) / (1000*60*60*24));
+  document.getElementById('examCountdown').textContent = days > 0 ? days : 0;
+
+  const todayStr = formatDate(new Date());
+  const todayTasks = appData.workTasks[todayStr] || [];
+  const dashWork = document.getElementById('dashWorkTasks');
+  if (todayTasks.length === 0) {
+    dashWork.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>今天还没有工作计划</p></div>';
+  } else {
+    dashWork.innerHTML = todayTasks.slice(0, 5).map(t => `
+      <div class="task-item">
+        <div class="task-checkbox ${t.done?'checked':''}" onclick="toggleWorkTask('${t.id}')"></div>
+        <span class="task-text ${t.done?'done':''}">${escapeHtml(t.text)}</span>
+        <span class="task-priority priority-${t.priority}">${t.priority==='high'?'高':t.priority==='mid'?'中':'低'}</span>
+      </div>
+    `).join('') + (todayTasks.length > 5 ? `<div style="text-align:center;margin-top:6px;font-size:12px;color:var(--text-soft);">还有 ${todayTasks.length-5} 项...</div>` : '');
+  }
+
+  const todayLog = appData.studyLogs.filter(l => l.date === todayStr);
+  const dashStudy = document.getElementById('dashStudyTasks');
+  if (todayLog.length > 0) {
+    dashStudy.innerHTML = todayLog.map(l => `
+      <div class="task-item">
+        <div class="task-checkbox checked"></div>
+        <span class="task-text done">${l.subject==='sub1'?'📖':'🏗️'} ${escapeHtml(l.content)} (${l.duration}分钟)</span>
+      </div>
+    `).join('');
+  } else {
+    dashStudy.innerHTML = `<div style="font-size:13px;color:var(--text-soft);margin-bottom:6px;">今日尚未学习记录</div><div style="font-size:12px;">📖 经济基础: ${appData.studyProgress.sub1}%<br>🏗️ 建筑与房地产: ${appData.studyProgress.sub2}%</div>`;
+  }
+
+  const pendingOrders = appData.orders.filter(o => o.status === 'pending' || o.status === 'progress');
+  const dashOrders = document.getElementById('dashBakingOrders');
+  if (pendingOrders.length === 0) {
+    dashOrders.innerHTML = '<div class="empty-state"><div class="icon">🧁</div><p>暂无待处理订单</p></div>';
+  } else {
+    dashOrders.innerHTML = pendingOrders.slice(0,4).map(o => `
+      <div class="reminder-item">
+        <div class="reminder-date"><div class="reminder-day">${new Date(o.deliveryDate).getDate()}</div><div class="reminder-month">${new Date(o.deliveryDate).getMonth()+1}月</div></div>
+        <div class="reminder-info"><div class="reminder-title">${escapeHtml(o.customer)} - ${escapeHtml(o.product)} ×${o.qty}</div><div class="reminder-desc">¥${o.amount} | ${o.status==='pending'?'待制作':'制作中'}</div></div>
+      </div>
+    `).join('');
+  }
+
+  renderReminders();
+}
+
+function renderReminders() {
+  const reminders = [];
+  appData.orders.filter(o => o.status !== 'done' && o.status !== 'cancel').forEach(o => {
+    reminders.push({ date: o.deliveryDate, title: `订单: ${o.customer}`, desc: `${o.product} ×${o.qty}`, type: 'order' });
+  });
+  appData.contents.filter(c => c.status === 'pending').forEach(c => {
+    reminders.push({ date: c.date, title: `发布: ${c.platform}`, desc: c.topic, type: 'content' });
+  });
+  appData.studyMilestones.filter(m => !m.done).forEach(m => {
+    reminders.push({ date: m.date, title: '备考里程碑', desc: m.title, type: 'study' });
+  });
+  reminders.sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const container = document.getElementById('dashReminders');
+  if (reminders.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">🔔</div><p>暂无提醒事项</p></div>';
+    return;
+  }
+
+  container.innerHTML = reminders.slice(0, 6).map(r => {
+    const d = new Date(r.date);
+    const diff = Math.ceil((d - today) / (1000*60*60*24));
+    const urgent = diff <= 3 && diff >= 0;
+    const overdue = diff < 0;
+    return `
+      <div class="reminder-item ${urgent?'reminder-urgent':''}">
+        <div class="reminder-date"><div class="reminder-day">${d.getDate()}</div><div class="reminder-month">${d.getMonth()+1}月</div></div>
+        <div class="reminder-info"><div class="reminder-title">${escapeHtml(r.title)} ${overdue?'<span class="tag status-cancel">已过期</span>':urgent?'<span class="tag status-pending">即将到期</span>':''}</div><div class="reminder-desc">${escapeHtml(r.desc)}</div></div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ========================================
+// 工作管理
+// ========================================
+function changeWorkDate(delta) {
+  const d = new Date(currentWorkDate);
+  d.setDate(d.getDate() + delta);
+  currentWorkDate = formatDate(d);
+  renderWorkTasks();
+}
+
+function setWorkDateToday() {
+  currentWorkDate = formatDate(new Date());
+  renderWorkTasks();
+}
+
+function renderWorkTasks() {
+  document.getElementById('workDateDisplay').textContent = formatDateChinese(currentWorkDate);
+  const tasks = appData.workTasks[currentWorkDate] || [];
+  const list = document.getElementById('workTaskList');
+  if (tasks.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>这一天还没有任务</p></div>';
+  } else {
+    const priorityOrder = { high: 0, mid: 1, low: 2 };
+    const sorted = [...tasks].sort((a,b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    list.innerHTML = sorted.map(t => `
+      <div class="task-item">
+        <div class="task-checkbox ${t.done?'checked':''}" onclick="toggleWorkTask('${t.id}')"></div>
+        <span class="task-text ${t.done?'done':''}">${escapeHtml(t.text)}</span>
+        <span class="task-priority priority-${t.priority}">${t.priority==='high'?'高':t.priority==='mid'?'中':'低'}</span>
+        <button class="task-delete" onclick="deleteWorkTask('${t.id}')">✕</button>
+      </div>
+    `).join('');
+  }
+  renderWorkWeeklyStats();
+}
+
+function addWorkTask() {
+  const input = document.getElementById('newWorkTask');
+  const priority = document.getElementById('newWorkPriority').value;
+  const text = input.value.trim();
+  if (!text) return;
+  if (!appData.workTasks[currentWorkDate]) appData.workTasks[currentWorkDate] = [];
+  appData.workTasks[currentWorkDate].push({ id: uid(), text, priority, done: false });
+  save();
+  input.value = '';
+  renderWorkTasks();
+  showToast('任务已添加 ✓');
+}
+
+function toggleWorkTask(id) {
+  const tasks = appData.workTasks[currentWorkDate] || [];
+  const t = tasks.find(t => t.id === id);
+  if (t) { t.done = !t.done; save(); renderWorkTasks(); }
+}
+
+function deleteWorkTask(id) {
+  appData.workTasks[currentWorkDate] = (appData.workTasks[currentWorkDate]||[]).filter(t => t.id !== id);
+  save();
+  renderWorkTasks();
+}
+
+function renderWorkWeeklyStats() {
+  const stats = document.getElementById('workWeeklyStats');
+  const today = new Date();
+  let totalTasks = 0, doneTasks = 0;
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const dateStr = formatDate(d);
+    const tasks = appData.workTasks[dateStr] || [];
+    const done = tasks.filter(t => t.done).length;
+    totalTasks += tasks.length; doneTasks += done;
+    days.push({ date: dateStr, total: tasks.length, done });
+  }
+  const rate = totalTasks > 0 ? Math.round(doneTasks/totalTasks*100) : 0;
+  stats.innerHTML = `
+    <div class="stat-grid" style="margin-bottom:10px;">
+      <div class="stat-card"><div class="stat-value">${totalTasks}</div><div class="stat-label">总任务</div></div>
+      <div class="stat-card"><div class="stat-value">${doneTasks}</div><div class="stat-label">已完成</div></div>
+      <div class="stat-card"><div class="stat-value">${rate}%</div><div class="stat-label">完成率</div></div>
+    </div>
+    <div style="display:flex; gap:4px; align-items:flex-end; height:80px; margin-top:12px;">
+      ${days.map(d => {
+        const h = d.total > 0 ? (d.done/d.total*100) : 0;
+        return `<div style="flex:1;text-align:center;"><div style="background:var(--bg-soft);border-radius:6px 6px 0 0;height:60px;display:flex;align-items:flex-end;padding:2px;"><div style="width:100%;background:${d.total>0?'linear-gradient(0deg,var(--primary),var(--primary-light))':'var(--border)'};border-radius:4px 4px 0 0;height:${Math.max(h,d.total>0?8:2)}%;transition:height 0.5s;"></div></div><div style="font-size:10px;color:var(--text-soft);margin-top:3px;">${new Date(d.date).getMonth()+1}/${new Date(d.date).getDate()}</div></div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ========================================
+// 备考追踪
+// ========================================
+function renderStudy() {
+  document.getElementById('sub1Percent').textContent = appData.studyProgress.sub1 + '%';
+  document.getElementById('sub1Bar').style.width = appData.studyProgress.sub1 + '%';
+  document.getElementById('sub1Input').value = appData.studyProgress.sub1;
+  document.getElementById('sub1Info').textContent = `已学 ${appData.studyProgress.sub1}%`;
+
+  document.getElementById('sub2Percent').textContent = appData.studyProgress.sub2 + '%';
+  document.getElementById('sub2Bar').style.width = appData.studyProgress.sub2 + '%';
+  document.getElementById('sub2Input').value = appData.studyProgress.sub2;
+  document.getElementById('sub2Info').textContent = `进度 ${appData.studyProgress.sub2}%`;
+
+  document.getElementById('sub1Tag').className = 'tag ' + (appData.studyProgress.sub1 >= 100 ? 'status-done' : 'status-progress');
+  document.getElementById('sub2Tag').className = 'tag ' + (appData.studyProgress.sub2 === 0 ? 'status-pending' : appData.studyProgress.sub2 >= 100 ? 'status-done' : 'status-progress');
+
+  renderStudyLogs();
+  renderMilestones();
+}
+
+function updateStudyProgress(sub) {
+  const val = parseInt(document.getElementById(`sub${sub}Input`).value);
+  if (isNaN(val) || val < 0 || val > 100) { showToast('请输入0-100的数字'); return; }
+  appData.studyProgress[`sub${sub}`] = val;
+  save();
+  renderStudy();
+  showToast('进度已更新 ✓');
+}
+
+function renderStudyLogs() {
+  const container = document.getElementById('studyLogList');
+  if (appData.studyLogs.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">✏️</div><p>还没有学习记录</p></div>';
+    return;
+  }
+  const sorted = [...appData.studyLogs].sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  container.innerHTML = sorted.slice(0, 20).map(l => `
+    <div class="reminder-item">
+      <div class="reminder-date"><div class="reminder-day">${new Date(l.date).getDate()}</div><div class="reminder-month">${new Date(l.date).getMonth()+1}月</div></div>
+      <div class="reminder-info"><div class="reminder-title">${l.subject === 'sub1' ? '📖 经济基础' : '🏗️ 建筑与房地产'} - ${escapeHtml(l.content)}</div><div class="reminder-desc">⏱ ${l.duration}分钟${l.note ? ' | ' + escapeHtml(l.note) : ''}</div></div>
+      <button class="task-delete" onclick="deleteStudyLog('${l.id}')">✕</button>
+    </div>
+  `).join('');
+}
+
+function openStudyLogModal() {
+  const today = formatDate(new Date());
+  showModal(`
+    <div class="modal-title">✏️ 添加学习记录 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-group"><label>日期</label><input type="date" class="input" id="logDate" value="${today}"></div>
+    <div class="form-group"><label>科目</label><select class="select" id="logSubject"><option value="sub1">📖 经济基础</option><option value="sub2">🏗️ 建筑与房地产</option></select></div>
+    <div class="form-group"><label>学习时长(分钟)</label><input type="number" class="input" id="logDuration" value="60" min="1"></div>
+    <div class="form-group"><label>学习内容</label><input type="text" class="input" id="logContent" placeholder="如：第一章 经济学基础"></div>
+    <div class="form-group"><label>笔记(可选)</label><textarea class="textarea" id="logNote" placeholder="重点记录..."></textarea></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveStudyLog()">保存记录</button>
+  `);
+}
+
+function saveStudyLog() {
+  const log = {
+    id: uid(),
+    date: document.getElementById('logDate').value,
+    subject: document.getElementById('logSubject').value,
+    duration: parseInt(document.getElementById('logDuration').value) || 0,
+    content: document.getElementById('logContent').value.trim(),
+    note: document.getElementById('logNote').value.trim()
+  };
+  if (!log.content) { showToast('请输入学习内容'); return; }
+  appData.studyLogs.push(log);
+  save();
+  closeModal();
+  renderStudyLogs();
+  showToast('学习记录已保存 ✓');
+}
+
+function deleteStudyLog(id) {
+  appData.studyLogs = appData.studyLogs.filter(l => l.id !== id);
+  save();
+  renderStudyLogs();
+}
+
+function renderMilestones() {
+  const container = document.getElementById('studyMilestones');
+  const today = new Date(); today.setHours(0,0,0,0);
+  container.innerHTML = appData.studyMilestones.map(m => {
+    const d = new Date(m.date);
+    const diff = Math.ceil((d - today) / (1000*60*60*24));
+    const overdue = diff < 0 && !m.done;
+    return `<div class="reminder-item ${overdue?'reminder-urgent':''}"><div class="task-checkbox ${m.done?'checked':''}" onclick="toggleMilestone(${m.id})"></div><div class="reminder-info"><div class="reminder-title" style="${m.done?'text-decoration:line-through;color:var(--text-light);':''}">${escapeHtml(m.title)}</div><div class="reminder-desc">📅 ${formatDateChinese(m.date)} ${m.done?'✅ 已完成':overdue?`已过期${Math.abs(diff)}天`:`还有${diff}天`}</div></div></div>`;
+  }).join('');
+}
+
+function toggleMilestone(id) {
+  const m = appData.studyMilestones.find(m => m.id === id);
+  if (m) { m.done = !m.done; save(); renderMilestones(); }
+}
+
+// ========================================
+// 烘焙管理
+// ========================================
+function switchBakingTab(tab) {
+  document.querySelectorAll('.baking-subtab').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.baking-subtab[data-baking-tab="${tab}"]`).classList.add('active');
+  document.getElementById('baking-recipes').style.display = tab === 'recipes' ? '' : 'none';
+  document.getElementById('baking-orders').style.display = tab === 'orders' ? '' : 'none';
+  document.getElementById('baking-content').style.display = tab === 'content' ? '' : 'none';
+}
+
+function renderBaking() {
+  renderRecipes();
+  renderOrders();
+  renderContents();
+}
+
+function renderRecipes() {
+  const search = (document.getElementById('recipeSearch')?.value || '').toLowerCase();
+  const cat = document.getElementById('recipeCatFilter')?.value || '';
+  const container = document.getElementById('recipeList');
+  let filtered = appData.recipes;
+  if (search) filtered = filtered.filter(r => r.name.toLowerCase().includes(search));
+  if (cat) filtered = filtered.filter(r => r.category === cat);
+  if (filtered.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📓</div><p>配方库还是空的</p></div>';
+    return;
+  }
+  container.innerHTML = filtered.map(r => `
+    <div class="recipe-card" onclick="openRecipeDetail(${r.id})">
+      <div class="recipe-header"><div><div class="recipe-name">${escapeHtml(r.name)}</div><div class="recipe-cat">${r.category} | ${'★'.repeat(r.rating||0)}${'☆'.repeat(5-(r.rating||0))}</div></div><button class="task-delete" onclick="event.stopPropagation();deleteRecipe(${r.id})">✕</button></div>
+      <div class="recipe-note">${escapeHtml(r.note || '点击查看详情')}</div>
+    </div>
+  `).join('');
+}
+
+function openRecipeModal(id) {
+  const r = id ? appData.recipes.find(x => x.id === id) : {};
+  showModal(`
+    <div class="modal-title">📓 ${id?'编辑':'新增'}配方 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-group"><label>配方名称</label><input type="text" class="input" id="rName" value="${escapeHtml(r.name||'')}" placeholder="如：伯爵红茶巴斯克"></div>
+    <div class="form-row"><div class="form-group"><label>分类</label><select class="select" id="rCat"><option value="蛋糕" ${r.category==='蛋糕'?'selected':''}>蛋糕</option><option value="面包" ${r.category==='面包'?'selected':''}>面包</option><option value="饼干" ${r.category==='饼干'?'selected':''}>饼干</option><option value="甜点" ${r.category==='甜点'?'selected':''}>甜点</option><option value="其他" ${r.category==='其他'?'selected':''}>其他</option></select></div><div class="form-group"><label>评分</label><select class="select" id="rRating">${[0,1,2,3,4,5].map(n=>`<option value="${n}" ${(r.rating||0)===n?'selected':''}>${'★'.repeat(n)}${'☆'.repeat(5-n)}</option>`).join('')}</select></div></div>
+    <div class="form-group"><label>原料用量</label><textarea class="textarea" id="rIngredients" placeholder="奶油奶酪 250g&#10;淡奶油 150ml&#10;砂糖 60g">${escapeHtml(r.ingredients||'')}</textarea></div>
+    <div class="form-group"><label>制作步骤</label><textarea class="textarea" id="rSteps" style="min-height:100px" placeholder="1. ...&#10;2. ...">${escapeHtml(r.steps||'')}</textarea></div>
+    <div class="form-group"><label>改良记录/备注</label><textarea class="textarea" id="rNote" placeholder="每次改良的记录">${escapeHtml(r.note||'')}</textarea></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveRecipe(${id||0})">保存配方</button>
+  `);
+}
+
+function saveRecipe(id) {
+  const recipe = {
+    id: id || Date.now(),
+    name: document.getElementById('rName').value.trim(),
+    category: document.getElementById('rCat').value,
+    rating: parseInt(document.getElementById('rRating').value),
+    ingredients: document.getElementById('rIngredients').value.trim(),
+    steps: document.getElementById('rSteps').value.trim(),
+    note: document.getElementById('rNote').value.trim()
+  };
+  if (!recipe.name) { showToast('请输入配方名称'); return; }
+  if (id) { const idx = appData.recipes.findIndex(r => r.id === id); appData.recipes[idx] = recipe; }
+  else { appData.recipes.push(recipe); }
+  save(); closeModal(); renderRecipes(); showToast('配方已保存 ✓');
+}
+
+function openRecipeDetail(id) {
+  const r = appData.recipes.find(x => x.id === id);
+  if (!r) return;
+  showModal(`
+    <div class="modal-title">📓 ${escapeHtml(r.name)} <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div style="margin-bottom:10px;"><span class="tag status-progress">${r.category}</span><span class="tag" style="background:var(--bg-soft);color:var(--primary-dark);">${'★'.repeat(r.rating||0)}${'☆'.repeat(5-(r.rating||0))}</span></div>
+    <div class="section-title">🥣 原料用量</div><div style="white-space:pre-wrap;font-size:13px;margin-bottom:14px;">${escapeHtml(r.ingredients||'未记录')}</div>
+    <div class="section-title">📝 制作步骤</div><div style="white-space:pre-wrap;font-size:13px;margin-bottom:14px;">${escapeHtml(r.steps||'未记录')}</div>
+    <div class="section-title">💡 改良记录</div><div style="white-space:pre-wrap;font-size:13px;color:var(--text-soft);margin-bottom:14px;">${escapeHtml(r.note||'暂无')}</div>
+    <button class="btn btn-outline" style="width:100%;" onclick="closeModal();openRecipeModal(${r.id});">✏️ 编辑</button>
+  `);
+}
+
+function deleteRecipe(id) {
+  if (!confirm('确定删除这个配方吗？')) return;
+  appData.recipes = appData.recipes.filter(r => r.id !== id);
+  save(); renderRecipes(); showToast('配方已删除');
+}
+
+function renderOrders() {
+  const tbody = document.getElementById('orderTableBody');
+  if (appData.orders.length === 0) { tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">📦</div><p>暂无订单</p></div></td></tr>'; return; }
+  const sorted = [...appData.orders].sort((a,b) => new Date(b.deliveryDate) - new Date(a.deliveryDate));
+  const statusMap = { pending:{text:'待制作',cls:'status-pending'}, progress:{text:'制作中',cls:'status-progress'}, done:{text:'已完成',cls:'status-done'}, cancel:{text:'已取消',cls:'status-cancel'} };
+  tbody.innerHTML = sorted.map(o => `<tr><td>${escapeHtml(o.customer)}</td><td>${escapeHtml(o.product)}</td><td>${o.qty}</td><td>${formatDateChinese(o.deliveryDate)}</td><td>¥${o.amount}</td><td><span class="tag ${statusMap[o.status].cls}">${statusMap[o.status].text}</span></td><td><button class="btn btn-soft btn-sm" onclick="openOrderModal('${o.id}')">编辑</button><button class="btn-icon-sm" onclick="deleteOrder('${o.id}')">🗑</button></td></tr>`).join('');
+}
+
+function openOrderModal(id) {
+  const o = id ? appData.orders.find(x => x.id === id) : {};
+  const today = formatDate(new Date());
+  showModal(`
+    <div class="modal-title">📦 ${id?'编辑':'新增'}订单 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-row"><div class="form-group"><label>客户姓名</label><input type="text" class="input" id="oCustomer" value="${escapeHtml(o.customer||'')}" placeholder="如：王女士"></div><div class="form-group"><label>联系电话</label><input type="text" class="input" id="oPhone" value="${escapeHtml(o.phone||'')}" placeholder="可选"></div></div>
+    <div class="form-row"><div class="form-group"><label>产品名称</label><input type="text" class="input" id="oProduct" value="${escapeHtml(o.product||'')}" placeholder="如：6寸伯爵红茶蛋糕"></div><div class="form-group" style="max-width:80px"><label>数量</label><input type="number" class="input" id="oQty" value="${o.qty||1}" min="1"></div></div>
+    <div class="form-row"><div class="form-group"><label>交付日期</label><input type="date" class="input" id="oDate" value="${o.deliveryDate||today}"></div><div class="form-group"><label>金额(元)</label><input type="number" class="input" id="oAmount" value="${o.amount||''}" placeholder="0"></div></div>
+    <div class="form-group"><label>状态</label><select class="select" id="oStatus"><option value="pending" ${o.status==='pending'?'selected':''}>待制作</option><option value="progress" ${o.status==='progress'?'selected':''}>制作中</option><option value="done" ${o.status==='done'?'selected':''}>已完成</option><option value="cancel" ${o.status==='cancel'?'selected':''}>已取消</option></select></div>
+    <div class="form-group"><label>备注</label><textarea class="textarea" id="oNote">${escapeHtml(o.note||'')}</textarea></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveOrder('${id||''}')">保存订单</button>
+  `);
+}
+
+function saveOrder(id) {
+  const order = { id: id || uid(), customer: document.getElementById('oCustomer').value.trim(), phone: document.getElementById('oPhone').value.trim(), product: document.getElementById('oProduct').value.trim(), qty: parseInt(document.getElementById('oQty').value) || 1, deliveryDate: document.getElementById('oDate').value, amount: parseFloat(document.getElementById('oAmount').value) || 0, status: document.getElementById('oStatus').value, note: document.getElementById('oNote').value.trim() };
+  if (!order.customer || !order.product) { showToast('请填写客户和产品'); return; }
+  if (id) { const idx = appData.orders.findIndex(o => o.id === id); appData.orders[idx] = order; }
+  else { appData.orders.push(order); }
+  save(); closeModal(); renderOrders(); showToast('订单已保存 ✓');
+}
+
+function deleteOrder(id) { if (!confirm('确定删除这个订单吗？')) return; appData.orders = appData.orders.filter(o => o.id !== id); save(); renderOrders(); showToast('订单已删除'); }
+
+function renderContents() {
+  const tbody = document.getElementById('contentTableBody');
+  if (appData.contents.length === 0) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">📱</div><p>暂无内容排期</p></div></td></tr>'; return; }
+  const sorted = [...appData.contents].sort((a,b) => new Date(b.date) - new Date(a.date));
+  const statusMap = { pending:{text:'待发布',cls:'status-pending'}, done:{text:'已发布',cls:'status-done'}, draft:{text:'草稿中',cls:'status-progress'} };
+  const platformIcons = { '小红书':'📕','抖音':'🎵','微信':'💚','微博':'🔴','B站':'📺' };
+  tbody.innerHTML = sorted.map(c => { const recipe = c.recipeId ? appData.recipes.find(r => r.id === c.recipeId) : null; return `<tr><td>${formatDateChinese(c.date)}</td><td>${platformIcons[c.platform]||'📄'} ${escapeHtml(c.platform)}</td><td>${escapeHtml(c.topic)}</td><td>${recipe?escapeHtml(recipe.name):'—'}</td><td><span class="tag ${statusMap[c.status].cls}">${statusMap[c.status].text}</span></td><td><button class="btn btn-soft btn-sm" onclick="openContentModal('${c.id}')">编辑</button><button class="btn-icon-sm" onclick="deleteContent('${c.id}')">🗑</button></td></tr>`; }).join('');
+}
+
+function openContentModal(id) {
+  const c = id ? appData.contents.find(x => x.id === id) : {};
+  const today = formatDate(new Date());
+  const recipeOptions = appData.recipes.map(r => `<option value="${r.id}" ${c.recipeId===r.id?'selected':''}>${escapeHtml(r.name)}</option>`).join('');
+  showModal(`
+    <div class="modal-title">📱 ${id?'编辑':'新增'}内容排期 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-row"><div class="form-group"><label>计划日期</label><input type="date" class="input" id="cDate" value="${c.date||today}"></div><div class="form-group"><label>平台</label><select class="select" id="cPlatform">${['小红书','抖音','微信','微博','B站'].map(p=>`<option value="${p}" ${c.platform===p?'selected':''}>${p}</option>`).join('')}</select></div></div>
+    <div class="form-group"><label>内容主题</label><input type="text" class="input" id="cTopic" value="${escapeHtml(c.topic||'')}" placeholder="如：夏日柠檬蛋糕教程"></div>
+    <div class="form-group"><label>关联配方</label><select class="select" id="cRecipe"><option value="">— 不关联 —</option>${recipeOptions}</select></div>
+    <div class="form-group"><label>状态</label><select class="select" id="cStatus"><option value="draft" ${c.status==='draft'?'selected':''}>草稿中</option><option value="pending" ${c.status==='pending'?'selected':''}>待发布</option><option value="done" ${c.status==='done'?'selected':''}>已发布</option></select></div>
+    <div class="form-group"><label>备注</label><textarea class="textarea" id="cNote">${escapeHtml(c.note||'')}</textarea></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveContent('${id||''}')">保存</button>
+  `);
+}
+
+function saveContent(id) {
+  const content = { id: id || uid(), date: document.getElementById('cDate').value, platform: document.getElementById('cPlatform').value, topic: document.getElementById('cTopic').value.trim(), recipeId: document.getElementById('cRecipe').value ? parseInt(document.getElementById('cRecipe').value) : null, status: document.getElementById('cStatus').value, note: document.getElementById('cNote').value.trim() };
+  if (!content.topic) { showToast('请输入内容主题'); return; }
+  if (id) { const idx = appData.contents.findIndex(c => c.id === id); appData.contents[idx] = content; }
+  else { appData.contents.push(content); }
+  save(); closeModal(); renderContents(); showToast('内容排期已保存 ✓');
+}
+
+function deleteContent(id) { if (!confirm('确定删除这条内容排期吗？')) return; appData.contents = appData.contents.filter(c => c.id !== id); save(); renderContents(); showToast('已删除'); }
+
+// ========================================
+// 体重管理
+// ========================================
+function renderWeight() {
+  const goal = appData.weightGoal;
+  document.getElementById('goalWeightInput').value = goal.target || '';
+  document.getElementById('goalWeightDate').value = goal.targetDate || '';
+  document.getElementById('weightGoal').textContent = goal.target || '--';
+
+  const todayStr = formatDate(new Date());
+  const todayRecord = appData.weightRecords.find(r => r.date === todayStr);
+  const currentW = todayRecord ? todayRecord.weight : (appData.weightRecords.length > 0 ? appData.weightRecords[appData.weightRecords.length - 1].weight : null);
+
+  if (currentW !== null) {
+    document.getElementById('currentWeight').textContent = currentW;
+    document.getElementById('weightDate').textContent = todayRecord ? '今日已记录 ✓' : `最近记录: ${currentW}kg`;
+  } else {
+    document.getElementById('currentWeight').textContent = '--';
+    document.getElementById('weightDate').textContent = '还没有体重记录';
+  }
+
+  if (goal.target && currentW !== null) {
+    const diff = (currentW - goal.target).toFixed(1);
+    const prefix = diff > 0 ? '+' : '';
+    document.getElementById('weightDiff').textContent = diff > 0 ? `还需减 ${diff}kg` : diff < 0 ? `已低于目标 ${Math.abs(diff)}kg` : '已达目标 ✓';
+    document.getElementById('weightDiff').style.color = diff > 0 ? 'var(--warning)' : diff < 0 ? 'var(--success)' : 'var(--success)';
+    const startW = goal.startWeight || currentW;
+    const totalDiff = Math.abs(startW - goal.target);
+    const progress = totalDiff > 0 ? Math.min(100, Math.abs(startW - currentW) / totalDiff * 100) : 50;
+    const fill = document.getElementById('weightGoalFill');
+    fill.style.width = progress + '%';
+    fill.className = 'weight-goal-fill' + (diff <= 0 ? ' on-track' : '');
+  } else {
+    document.getElementById('weightDiff').textContent = '请设定目标';
+    document.getElementById('weightDiff').style.color = 'var(--text-soft)';
+    document.getElementById('weightGoalFill').style.width = '0%';
+  }
+
+  const goalInfo = document.getElementById('weightGoalInfo');
+  if (goal.target && goal.targetDate) {
+    const d = new Date(goal.targetDate);
+    const daysLeft = Math.ceil((d - new Date()) / (1000*60*60*24));
+    if (daysLeft > 0 && currentW > goal.target) {
+      const needLose = (currentW - goal.target).toFixed(1);
+      const perWeek = (needLose / (daysLeft / 7)).toFixed(2);
+      goalInfo.innerHTML = `🎯 目标：${goal.targetDate} 前达到 ${goal.target}kg | 还剩 ${daysLeft} 天 | 每周需减约 ${perWeek}kg`;
+    } else if (daysLeft <= 0) {
+      goalInfo.innerHTML = `⏰ 目标日期已过 | 当前 ${currentW}kg，目标 ${goal.target}kg`;
+    } else if (currentW <= goal.target) {
+      goalInfo.innerHTML = `🎉 恭喜！已达到目标体重 ${goal.target}kg`;
+    } else {
+      goalInfo.innerHTML = `🎯 目标：${goal.targetDate} 前达到 ${goal.target}kg`;
+    }
+  } else {
+    goalInfo.innerHTML = '请设定目标体重和日期';
+  }
+
+  renderWeightChart();
+  renderWeightHistory();
+}
+
+function renderWeightChart() {
+  const container = document.getElementById('weightChartArea');
+  const records = [...appData.weightRecords].sort((a,b) => a.date.localeCompare(b.date)).slice(-30);
+  if (records.length < 2) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📈</div><p>需要至少2条记录才能绘制趋势图</p></div>';
+    return;
+  }
+  const weights = records.map(r => r.weight);
+  const minW = Math.floor(Math.min(...weights) - 1);
+  const maxW = Math.ceil(Math.max(...weights) + 1);
+  const range = maxW - minW || 1;
+  container.innerHTML = `<div class="weight-chart">${records.map((r, i) => { const h = ((r.weight - minW) / range * 100); const isLast = i === records.length - 1; const d = new Date(r.date); return `<div class="weight-chart-bar"><div style="font-size:9px;font-weight:600;color:${isLast?'var(--primary)':'var(--text-light)'};margin-bottom:2px;">${r.weight}</div><div class="weight-chart-fill" style="height:${h}%;background:${isLast?'var(--primary)':'var(--primary-light)'};opacity:${0.4+(i/records.length)*0.6};"></div><div class="weight-chart-date">${d.getMonth()+1}/${d.getDate()}</div></div>`; }).join('')}</div><div style="text-align:center;font-size:11px;color:var(--text-soft);margin-top:6px;">最低 ${minW}kg → 最高 ${maxW}kg | 共 ${records.length} 条</div>`;
+}
+
+function renderWeightHistory() {
+  const container = document.getElementById('weightHistoryList');
+  const records = [...appData.weightRecords].sort((a,b) => b.date.localeCompare(a.date));
+  if (records.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>还没有体重记录</p></div>'; return; }
+  container.innerHTML = records.slice(0, 30).map((r, i) => { const prev = records[i+1]; const diff = prev ? (r.weight - prev.weight).toFixed(1) : null; const diffStr = diff ? (diff > 0 ? `<span style="color:var(--danger)">+${diff}</span>` : diff < 0 ? `<span style="color:var(--success)">${diff}</span>` : '<span style="color:var(--text-light)">0</span>') : ''; return `<div class="transaction-item"><span style="min-width:80px;">${formatDateChinese(r.date)}</span><span style="flex:1;font-weight:600;">${r.weight} kg</span><span style="font-size:11px;color:var(--text-soft);">${diffStr?'较前次 '+diffStr:'首次记录'}</span><button class="task-delete" onclick="deleteOneWeight('${r.date}')">✕</button></div>`; }).join('');
+}
+
+function recordWeight() {
+  const input = document.getElementById('newWeight');
+  const val = parseFloat(input.value);
+  if (isNaN(val) || val <= 0) { showToast('请输入有效体重'); return; }
+  const todayStr = formatDate(new Date());
+  const idx = appData.weightRecords.findIndex(r => r.date === todayStr);
+  if (idx >= 0) { appData.weightRecords[idx].weight = val; }
+  else { appData.weightRecords.push({ date: todayStr, weight: val }); }
+  if (appData.weightRecords.length === 1) { appData.weightGoal.startWeight = val; }
+  save(); input.value = ''; renderWeight(); showToast('体重已记录 ✓');
+}
+
+function saveWeightGoal() {
+  const target = parseFloat(document.getElementById('goalWeightInput').value);
+  const targetDate = document.getElementById('goalWeightDate').value;
+  if (!target || !targetDate) { showToast('请填写目标体重和日期'); return; }
+  const records = [...appData.weightRecords].sort((a,b) => b.date.localeCompare(a.date));
+  const startWeight = records.length > 0 ? records[0].weight : target + 5;
+  appData.weightGoal = { target, targetDate, startWeight };
+  save(); renderWeight(); showToast('目标已设定 ✓');
+}
+
+function deleteWeightHistory() { if (!confirm('确定清空所有体重记录吗？')) return; appData.weightRecords = []; save(); renderWeight(); showToast('记录已清空'); }
+function deleteOneWeight(date) { appData.weightRecords = appData.weightRecords.filter(r => r.date !== date); save(); renderWeight(); }
+
+// ========================================
+// 账单管理
+// ========================================
+const EXPENSE_CATS = ['餐饮','交通','购物','住房','娱乐','医疗','教育','人情','烘焙原料','烘焙设备','备考资料','其他'];
+const INCOME_CATS = ['工资','副业','私房收入','理财收益','红包','其他'];
+function getCategoryOptions(type) {
+  const cats = type === 'income' ? INCOME_CATS : type === 'save' ? ['定期存款','活期存款','理财转入','其他'] : EXPENSE_CATS;
+  return cats.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+function updateBillCategoryOptions() { document.getElementById('billCategory').innerHTML = getCategoryOptions(document.getElementById('billType').value); }
+
+function renderBills() {
+  document.getElementById('billDate').value = formatDate(new Date());
+  updateBillCategoryOptions();
+  document.getElementById('billType').onchange = updateBillCategoryOptions;
+  const months = [...new Set(appData.bills.map(b => b.date.substring(0,7)))].sort().reverse();
+  const filter = document.getElementById('billMonthFilter');
+  filter.innerHTML = '<option value="">全部月份</option>' + months.map(m => `<option value="${m}">${m}</option>`).join('');
+  renderBillSummary(); renderExpenseChart(); renderIncomeChart(); renderSaveGoal(); renderBillTable();
+}
+
+function renderBillSummary() {
+  const thisMonth = formatDate(new Date()).substring(0,7);
+  const monthBills = appData.bills.filter(b => b.date.startsWith(thisMonth));
+  const monthIncome = monthBills.filter(b => b.type === 'income').reduce((s,b) => s + b.amount, 0);
+  const monthExpense = monthBills.filter(b => b.type === 'expense').reduce((s,b) => s + b.amount, 0);
+  const monthSave = monthBills.filter(b => b.type === 'save').reduce((s,b) => s + b.amount, 0);
+  const totalSave = appData.bills.filter(b => b.type === 'save').reduce((s,b) => s + b.amount, 0);
+  document.getElementById('billSummary').innerHTML = `
+    <div class="bill-summary-card"><div class="amount amount-income">¥${monthIncome.toFixed(0)}</div><div class="label">本月收入</div></div>
+    <div class="bill-summary-card"><div class="amount amount-expense">¥${monthExpense.toFixed(0)}</div><div class="label">本月支出</div></div>
+    <div class="bill-summary-card"><div class="amount" style="color:${monthIncome-monthExpense>=0?'var(--success)':'var(--danger)'}">¥${(monthIncome-monthExpense).toFixed(0)}</div><div class="label">本月结余</div></div>
+    <div class="bill-summary-card"><div class="amount amount-save">¥${monthSave.toFixed(0)}</div><div class="label">本月存款</div></div>
+    <div class="bill-summary-card"><div class="amount" style="color:var(--primary-dark)">¥${totalSave.toFixed(0)}</div><div class="label">累计存款</div></div>
+  `;
+}
+
+function renderExpenseChart() {
+  const container = document.getElementById('expenseChart');
+  const thisMonth = formatDate(new Date()).substring(0,7);
+  const monthExpenses = appData.bills.filter(b => b.type === 'expense' && b.date.startsWith(thisMonth));
+  if (monthExpenses.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">📊</div><p>本月暂无支出</p></div>'; return; }
+  const catMap = {}; monthExpenses.forEach(b => { catMap[b.category] = (catMap[b.category] || 0) + b.amount; });
+  const entries = Object.entries(catMap).sort((a,b) => b[1] - a[1]);
+  const max = entries[0][1];
+  const colors = ['var(--primary)','var(--accent)','var(--warning)','var(--info)','var(--success)','#FF8A65','#9575CD','#4DB6AC'];
+  container.innerHTML = entries.map(([cat, amt], i) => `<div class="category-bar-wrap"><div class="category-bar-label"><span>${cat}</span><span>¥${amt.toFixed(0)}</span></div><div class="category-bar-track"><div class="category-bar-fill" style="width:${(amt/max*100)}%;background:${colors[i%colors.length]};"></div></div></div>`).join('');
+}
+
+function renderIncomeChart() {
+  const container = document.getElementById('incomeChart');
+  const thisMonth = formatDate(new Date()).substring(0,7);
+  const monthIncomes = appData.bills.filter(b => b.type === 'income' && b.date.startsWith(thisMonth));
+  if (monthIncomes.length === 0) { container.innerHTML = '<div class="empty-state"><div class="icon">📊</div><p>本月暂无收入记录</p></div>'; return; }
+  const catMap = {}; monthIncomes.forEach(b => { catMap[b.category] = (catMap[b.category] || 0) + b.amount; });
+  const entries = Object.entries(catMap).sort((a,b) => b[1] - a[1]);
+  const max = entries[0][1];
+  const colors = ['var(--success)','var(--info)','var(--primary)','var(--warning)','#66BB6A','#4DB6AC'];
+  container.innerHTML = entries.map(([cat, amt], i) => `<div class="category-bar-wrap"><div class="category-bar-label"><span>${cat}</span><span>¥${amt.toFixed(0)}</span></div><div class="category-bar-track"><div class="category-bar-fill" style="width:${(amt/max*100)}%;background:${colors[i%colors.length]};"></div></div></div>`).join('');
+}
+
+function renderSaveGoal() {
+  const totalSave = appData.bills.filter(b => b.type === 'save').reduce((s,b) => s + b.amount, 0);
+  const target = appData.saveGoal.target;
+  appData.saveGoal.current = totalSave;
+  const pct = target > 0 ? Math.min(100, Math.round(totalSave / target * 100)) : 0;
+  document.getElementById('saveGoalPercent').textContent = pct + '%';
+  document.getElementById('saveGoalBar').style.width = pct + '%';
+  document.getElementById('saveGoalInfo').textContent = target > 0 ? `🎯 目标 ¥${target.toLocaleString()} | 已存 ¥${totalSave.toLocaleString()} | 还需 ¥${(target - totalSave).toLocaleString()}` : '请点击"设定目标"按钮';
+}
+
+function openSaveGoalModal() {
+  showModal(`<div class="modal-title">🎯 存款目标 <button class="modal-close" onclick="closeModal()">✕</button></div><div class="form-group"><label>目标金额(元)</label><input type="number" class="input" id="sgTarget" value="${appData.saveGoal.target}" placeholder="如 50000"></div><button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveSaveGoal()">保存目标</button>`);
+}
+
+function saveSaveGoal() { const val = parseFloat(document.getElementById('sgTarget').value); if (!val || val <= 0) { showToast('请输入有效金额'); return; } appData.saveGoal.target = val; save(); closeModal(); renderBills(); showToast('存款目标已设定 ✓'); }
+
+function addBill() {
+  const bill = { id: uid(), date: document.getElementById('billDate').value, type: document.getElementById('billType').value, category: document.getElementById('billCategory').value, amount: parseFloat(document.getElementById('billAmount').value) || 0, note: document.getElementById('billNote').value.trim() };
+  if (!bill.amount || bill.amount <= 0) { showToast('请输入有效金额'); return; }
+  appData.bills.push(bill); save(); document.getElementById('billAmount').value = ''; document.getElementById('billNote').value = ''; renderBills(); showToast('记账成功 ✓');
+}
+
+function renderBillTable() {
+  const tbody = document.getElementById('billTableBody');
+  const filter = document.getElementById('billMonthFilter').value;
+  let bills = [...appData.bills].sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  if (filter) bills = bills.filter(b => b.date.startsWith(filter));
+  if (bills.length === 0) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">📋</div><p>暂无账单记录</p></div></td></tr>'; return; }
+  const typeMap = { income:{text:'💰 收入',cls:'tx-sell'}, expense:{text:'💸 支出',cls:'tx-buy'}, save:{text:'🏦 存款',cls:'status-progress'} };
+  tbody.innerHTML = bills.map(b => `<tr><td>${formatDateChinese(b.date)}</td><td><span class="transaction-type ${typeMap[b.type].cls}">${typeMap[b.type].text}</span></td><td>${escapeHtml(b.category)}</td><td style="font-weight:600;color:${b.type==='income'||b.type==='save'?'var(--success)':'var(--danger)'}">${b.type==='income'||b.type==='save'?'+':'-'}¥${b.amount.toFixed(2)}</td><td style="font-size:12px;color:var(--text-soft);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.note||'—')}</td><td><button class="btn-icon-sm" onclick="deleteBill('${b.id}')">🗑</button></td></tr>`).join('');
+}
+
+function deleteBill(id) { if (!confirm('确定删除这条账单记录吗？')) return; appData.bills = appData.bills.filter(b => b.id !== id); save(); renderBills(); showToast('已删除'); }
+
+// ========================================
+// 统计与周报
+// ========================================
+function renderStats() {
+  const today = new Date();
+  const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
+
+  let weekTotal = 0, weekDone = 0;
+  for (let i = 0; i < 7; i++) { const d = new Date(today); d.setDate(d.getDate() - i); const tasks = appData.workTasks[formatDate(d)] || []; weekTotal += tasks.length; weekDone += tasks.filter(t => t.done).length; }
+  const workRate = weekTotal > 0 ? Math.round(weekDone/weekTotal*100) : 0;
+
+  const weekLogs = appData.studyLogs.filter(l => new Date(l.date) >= weekAgo);
+  const studyMinutes = weekLogs.reduce((sum, l) => sum + l.duration, 0);
+
+  const doneOrders = appData.orders.filter(o => o.status === 'done');
+  const monthOrders = doneOrders.filter(o => { const d = new Date(o.deliveryDate); return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear(); });
+  const monthIncome = monthOrders.reduce((sum, o) => sum + o.amount, 0);
+  const recipeCount = appData.recipes.length;
+
+  const weightRecords = [...appData.weightRecords].sort((a,b) => b.date.localeCompare(a.date));
+  const latestWeight = weightRecords.length > 0 ? weightRecords[0].weight : null;
+  const weightTrend = weightRecords.length >= 2 ? (weightRecords[0].weight - weightRecords[weightRecords.length-1].weight).toFixed(1) : null;
+
+  const thisMonth = formatDate(today).substring(0,7);
+  const monthBills = appData.bills.filter(b => b.date.startsWith(thisMonth));
+  const monthIncomeBills = monthBills.filter(b => b.type === 'income').reduce((s,b) => s + b.amount, 0);
+  const monthExpenseBills = monthBills.filter(b => b.type === 'expense').reduce((s,b) => s + b.amount, 0);
+  const totalSave = appData.bills.filter(b => b.type === 'save').reduce((s,b) => s + b.amount, 0);
+
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-value">${workRate}%</div><div class="stat-label">本周工作完成率</div></div>
+    <div class="stat-card"><div class="stat-value">${Math.round(studyMinutes/60*10)/10}h</div><div class="stat-label">本周学习时长</div></div>
+    <div class="stat-card"><div class="stat-value">${recipeCount}</div><div class="stat-label">配方库总数</div></div>
+    <div class="stat-card"><div class="stat-value">¥${monthIncome}</div><div class="stat-label">本月订单收入</div></div>
+    <div class="stat-card"><div class="stat-value">${latestWeight||'--'}${latestWeight?'kg':''}</div><div class="stat-label">当前体重${weightTrend?(weightTrend>0?'↑':'↓'):''}</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--success)">¥${monthIncomeBills.toFixed(0)}</div><div class="stat-label">本月收入</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:var(--danger)">¥${monthExpenseBills.toFixed(0)}</div><div class="stat-label">本月支出</div></div>
+    <div class="stat-card"><div class="stat-value">¥${totalSave.toFixed(0)}</div><div class="stat-label">累计存款</div></div>
+  `;
+
+  renderWorkChart(); renderStudyChart(); generateWeeklyReport();
+}
+
+function renderWorkChart() {
+  const today = new Date();
+  const days = [];
+  for (let i = 6; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); const dateStr = formatDate(d); const tasks = appData.workTasks[dateStr] || []; days.push({ date: dateStr, total: tasks.length, done: tasks.filter(t => t.done).length }); }
+  document.getElementById('workChart').innerHTML = `<div style="display:flex;gap:4px;align-items:flex-end;height:100px;margin-top:12px;">${days.map(d => { const rate = d.total > 0 ? Math.round(d.done/d.total*100) : 0; return `<div style="flex:1;text-align:center;"><div style="font-size:10px;font-weight:600;margin-bottom:3px;color:var(--primary);">${d.total>0?rate+'%':'-'}</div><div style="background:var(--bg-soft);border-radius:6px 6px 0 0;height:60px;display:flex;align-items:flex-end;padding:2px;"><div style="width:100%;background:linear-gradient(0deg,var(--primary),var(--primary-light));border-radius:4px 4px 0 0;height:${Math.max(rate,d.total>0?5:0)}%;transition:height 0.5s;"></div></div><div style="font-size:10px;color:var(--text-soft);margin-top:3px;">${new Date(d.date).getMonth()+1}/${new Date(d.date).getDate()}</div></div>`; }).join('')}</div>`;
+}
+
+function renderStudyChart() {
+  const today = new Date();
+  const days = [];
+  for (let i = 6; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); const dateStr = formatDate(d); const logs = appData.studyLogs.filter(l => l.date === dateStr); days.push({ date: dateStr, minutes: logs.reduce((sum, l) => sum + l.duration, 0) }); }
+  const maxMin = Math.max(...days.map(d => d.minutes), 60);
+  document.getElementById('studyChart').innerHTML = `<div style="display:flex;gap:4px;align-items:flex-end;height:100px;margin-top:12px;">${days.map(d => { const h = d.minutes > 0 ? (d.minutes/maxMin*100) : 0; return `<div style="flex:1;text-align:center;"><div style="font-size:10px;font-weight:600;margin-bottom:3px;color:var(--info);">${d.minutes>0?d.minutes+'min':'-'}</div><div style="background:var(--bg-soft);border-radius:6px 6px 0 0;height:60px;display:flex;align-items:flex-end;padding:2px;"><div style="width:100%;background:linear-gradient(0deg,var(--info),#80CBC4);border-radius:4px 4px 0 0;height:${h}%;transition:height 0.5s;"></div></div><div style="font-size:10px;color:var(--text-soft);margin-top:3px;">${new Date(d.date).getMonth()+1}/${new Date(d.date).getDate()}</div></div>`; }).join('')}</div>`;
+}
+
+function generateWeeklyReport() {
+  const today = new Date();
+  const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
+
+  let workTotal = 0, workDone = 0;
+  for (let i = 0; i < 7; i++) { const d = new Date(today); d.setDate(d.getDate() - i); const tasks = appData.workTasks[formatDate(d)] || []; workTotal += tasks.length; workDone += tasks.filter(t => t.done).length; }
+  const workRate = workTotal > 0 ? Math.round(workDone/workTotal*100) : 0;
+
+  const weekLogs = appData.studyLogs.filter(l => new Date(l.date) >= weekAgo);
+  const studyMin = weekLogs.reduce((sum, l) => sum + l.duration, 0);
+  const sub1Logs = weekLogs.filter(l => l.subject === 'sub1');
+  const sub2Logs = weekLogs.filter(l => l.subject === 'sub2');
+
+  const weekOrders = appData.orders.filter(o => { const d = new Date(o.deliveryDate); return d >= weekAgo && d <= today; });
+  const weekContents = appData.contents.filter(c => { const d = new Date(c.date); return d >= weekAgo && d <= today; });
+
+  const nextWeek = new Date(today); nextWeek.setDate(nextWeek.getDate() + 7);
+  const upcomingOrders = appData.orders.filter(o => { const d = new Date(o.deliveryDate); return d > today && d <= nextWeek && o.status !== 'done' && o.status !== 'cancel'; });
+  const upcomingContents = appData.contents.filter(c => { const d = new Date(c.date); return d > today && d <= nextWeek && c.status !== 'done'; });
+
+  const weekBills = appData.bills.filter(b => { const d = new Date(b.date); return d >= weekAgo && d <= today; });
+  const weekIncome = weekBills.filter(b => b.type === 'income').reduce((s,b) => s + b.amount, 0);
+  const weekExpense = weekBills.filter(b => b.type === 'expense').reduce((s,b) => s + b.amount, 0);
+  const weekSave = weekBills.filter(b => b.type === 'save').reduce((s,b) => s + b.amount, 0);
+  const totalSave = appData.bills.filter(b => b.type === 'save').reduce((s,b) => s + b.amount, 0);
+
+  const report = `
+    <div class="weekly-report">
+      <h3>📋 本周总结 (${formatDate(weekAgo)} ~ ${formatDate(today)})</h3>
+      <div class="section-title">💼 工作</div><ul><li>本周共 ${workTotal} 项任务，已完成 ${workDone} 项，完成率 ${workRate}%</li><li>${workRate >= 80 ? '👍 完成率很高，保持！' : workRate >= 50 ? '💪 还需努力，继续加油' : '⚠️ 完成率偏低，注意调整节奏'}</li></ul>
+      <div class="section-title">💳 收支</div><ul><li>本周收入 ¥${weekIncome.toFixed(0)} | 支出 ¥${weekExpense.toFixed(0)} | 存款 ¥${weekSave.toFixed(0)}</li><li>本周结余 ¥${(weekIncome - weekExpense).toFixed(0)} | 累计存款 ¥${totalSave.toFixed(0)}</li><li>${weekIncome - weekExpense >= 0 ? '👍 本周有结余，继续保持' : '⚠️ 本周支出大于收入，注意控制消费'}</li></ul>
+      <div class="section-title">📚 备考</div><ul><li>本周学习总时长：${Math.round(studyMin/60*10)/10} 小时（${studyMin}分钟）</li><li>📖 经济基础：${sub1Logs.length} 次记录，当前进度 ${appData.studyProgress.sub1}%</li><li>🏗️ 建筑与房地产：${sub2Logs.length} 次记录，当前进度 ${appData.studyProgress.sub2}%</li><li>${studyMin >= 420 ? '👍 每天平均1小时以上，很好！' : studyMin > 0 ? '⚠️ 学习时长不足，建议每天至少1小时' : '⚠️ 本周尚未记录学习，尽快开始！'}</li></ul>
+      <div class="section-title">🧁 烘焙</div><ul><li>本周处理订单 ${weekOrders.length} 单</li><li>本周发布内容 ${weekContents.filter(c=>c.status==='done').length} 篇</li><li>配方库共 ${appData.recipes.length} 个配方</li></ul>
+      <div class="section-title">📌 下周重点</div><ul>${upcomingOrders.length > 0 ? `<li>📦 待交付订单 ${upcomingOrders.length} 单：${upcomingOrders.slice(0,3).map(o=>o.customer+'-'+o.product).join('、')}</li>` : ''}${upcomingContents.length > 0 ? `<li>📱 待发布内容 ${upcomingContents.length} 条</li>` : ''}<li>📚 经济基础目标进度：${Math.min(appData.studyProgress.sub1 + 10, 100)}%（+10%）</li><li>📚 建筑与房地产建议尽快开始第一轮学习</li><li>💳 继续记账，关注收支平衡</li>${upcomingOrders.length === 0 && upcomingContents.length === 0 ? '<li>暂无紧急待办，可以专注备考</li>' : ''}</ul>
+    </div>
+  `;
+  document.getElementById('weeklyReportArea').innerHTML = report;
+}
+
+// ========================================
+// 数据导入导出
+// ========================================
+function exportData() {
+  const dataStr = JSON.stringify(appData, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `胖阿瑶工作台备份_${formatDate(new Date())}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('数据已导出备份 ✓');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!confirm('导入将覆盖当前所有数据，确定继续吗？')) return;
+      appData = { ...DB.default, ...data };
+      save();
+      switchView('dashboard');
+      showToast('数据导入成功 ✓');
+    } catch(err) { showToast('文件格式错误，导入失败'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ========================================
+// 模态框
+// ========================================
+function showModal(html) {
+  document.getElementById('modalContent').innerHTML = html;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+// ========================================
+// 初始化
+// ========================================
+renderDashboard();
+</script>
+</body>
+</html>
