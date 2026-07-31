@@ -1287,8 +1287,8 @@ const DB = {
     bills: [{id:"ms8u4y896tag",date:"2026-07-31",type:"expense",category:"交通",amount:275.25,note:"加油"},{id:"ms8we5mia5kc",date:"2026-07-31",type:"expense",category:"餐饮",amount:75,note:"药膳鸡"},{id:"ms8yecu71tkk",date:"2026-07-31",type:"expense",category:"购物",amount:123,note:"好想来买零食"}],
     saveGoal: { target: 50000, current: 0 },
     pets: [
-      { id:'p1785508696479', name:'九月', emoji:'🐱', breed:'狮子猫', birthDate:'2024-03-01', weight:0, dewormInterval:90, lastDeworm:'2026-06-06', bathInterval:365, lastBath:'2026-02-10', vaccineInterval:365, lastVaccine:'' },
-      { id:'p1785508769601', name:'初二', emoji:'🐱', breed:'狮子猫', birthDate:'2025-08-01', weight:0, dewormInterval:90, lastDeworm:'2026-06-06', bathInterval:365, lastBath:'2026-02-10', vaccineInterval:365, lastVaccine:'' },
+      { id:'p1785508696479', name:'九月', emoji:'🐱', breed:'狮子猫', birthDate:'2024-03-01', weight:0, innerDewormInterval:90, lastInnerDeworm:'2026-06-06', outerDewormInterval:90, lastOuterDeworm:'2026-06-06', bathInterval:365, lastBath:'2026-02-10', vaccineInterval:365, lastVaccine:'' },
+      { id:'p1785508769601', name:'初二', emoji:'🐱', breed:'狮子猫', birthDate:'2025-08-01', weight:0, innerDewormInterval:90, lastInnerDeworm:'2026-06-06', outerDewormInterval:90, lastOuterDeworm:'2026-06-06', bathInterval:365, lastBath:'2026-02-10', vaccineInterval:365, lastVaccine:'' },
     ],
     petRecords: [],
     specialDates: [
@@ -1329,6 +1329,11 @@ if (!appData.materials) appData.materials = [];
 if (!appData.recipeCosts) appData.recipeCosts = [];
 if (!appData.pets) appData.pets = [];
 if (!appData.petRecords) appData.petRecords = [];
+// 迁移老驱虫数据到内驱+外驱
+appData.pets.forEach(p => {
+  if (p.dewormInterval && !p.innerDewormInterval) { p.innerDewormInterval = p.dewormInterval; p.outerDewormInterval = p.dewormInterval; }
+  if (p.lastDeworm && !p.lastInnerDeworm) { p.lastInnerDeworm = p.lastDeworm; p.lastOuterDeworm = p.lastDeworm; }
+});
 if (!appData.specialDates) appData.specialDates = [];
 // 迁移老备考数据到新结构
 if (!appData.exams) {
@@ -2739,11 +2744,17 @@ function renderPetList() {
       // 兼容旧数据
       ageStr = p.age + '岁';
     }
-    // 计算驱虫倒计时
-    const lastDeworm = p.lastDeworm ? new Date(p.lastDeworm) : null;
-    const dewormDue = lastDeworm ? new Date(lastDeworm.getTime() + p.dewormInterval * 24 * 60 * 60 * 1000) : null;
-    const dewormDays = dewormDue ? Math.ceil((dewormDue - now) / (1000 * 60 * 60 * 24)) : null;
-    const dewormOverdue = dewormDays !== null && dewormDays < 0;
+    // 计算内驱倒计时
+    const lastInnerDeworm = p.lastInnerDeworm ? new Date(p.lastInnerDeworm) : null;
+    const innerDewormDue = lastInnerDeworm ? new Date(lastInnerDeworm.getTime() + (p.innerDewormInterval||90) * 24 * 60 * 60 * 1000) : null;
+    const innerDewormDays = innerDewormDue ? Math.ceil((innerDewormDue - now) / (1000 * 60 * 60 * 24)) : null;
+    const innerDewormOverdue = innerDewormDays !== null && innerDewormDays < 0;
+
+    // 计算外驱倒计时
+    const lastOuterDeworm = p.lastOuterDeworm ? new Date(p.lastOuterDeworm) : null;
+    const outerDewormDue = lastOuterDeworm ? new Date(lastOuterDeworm.getTime() + (p.outerDewormInterval||90) * 24 * 60 * 60 * 1000) : null;
+    const outerDewormDays = outerDewormDue ? Math.ceil((outerDewormDue - now) / (1000 * 60 * 60 * 24)) : null;
+    const outerDewormOverdue = outerDewormDays !== null && outerDewormDays < 0;
 
     // 计算洗澡倒计时
     const lastBath = p.lastBath ? new Date(p.lastBath) : null;
@@ -2772,13 +2783,20 @@ function renderPetList() {
           <button class="btn-icon-sm" onclick="deletePet('${p.id}')">🗑</button>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
-        <div style="background:${dewormOverdue?'#FFF5F5':'var(--bg-soft)'};border-radius:10px;padding:10px;border-left:3px solid ${dewormOverdue?'var(--danger)':'var(--info)'};">
-          <div style="font-size:11px;color:var(--text-soft);">💊 驱虫</div>
-          <div style="font-weight:600;font-size:13px;color:${dewormOverdue?'var(--danger)':'var(--text-main)'};">
-            ${dewormDays !== null ? (dewormOverdue ? `超期${Math.abs(dewormDays)}天` : `还有${dewormDays}天`) : '未记录'}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;">
+        <div style="background:${innerDewormOverdue?'#FFF5F5':'var(--bg-soft)'};border-radius:10px;padding:10px;border-left:3px solid ${innerDewormOverdue?'var(--danger)':'var(--info)'};">
+          <div style="font-size:11px;color:var(--text-soft);">💊 内驱</div>
+          <div style="font-weight:600;font-size:13px;color:${innerDewormOverdue?'var(--danger)':'var(--text-main)'};">
+            ${innerDewormDays !== null ? (innerDewormOverdue ? `超期${Math.abs(innerDewormDays)}天` : `还有${innerDewormDays}天`) : '未记录'}
           </div>
-          <div style="font-size:10px;color:var(--text-soft);">每${p.dewormInterval||90}天 · 上次${lastDeworm?formatDateShort(formatDate(lastDeworm)):'—'}</div>
+          <div style="font-size:10px;color:var(--text-soft);">每${p.innerDewormInterval||90}天 · 上次${lastInnerDeworm?formatDateShort(formatDate(lastInnerDeworm)):'—'}</div>
+        </div>
+        <div style="background:${outerDewormOverdue?'#FFF5F5':'var(--bg-soft)'};border-radius:10px;padding:10px;border-left:3px solid ${outerDewormOverdue?'var(--danger)':'var(--primary)'};">
+          <div style="font-size:11px;color:var(--text-soft);">💧 外驱</div>
+          <div style="font-weight:600;font-size:13px;color:${outerDewormOverdue?'var(--danger)':'var(--text-main)'};">
+            ${outerDewormDays !== null ? (outerDewormOverdue ? `超期${Math.abs(outerDewormDays)}天` : `还有${outerDewormDays}天`) : '未记录'}
+          </div>
+          <div style="font-size:10px;color:var(--text-soft);">每${p.outerDewormInterval||90}天 · 上次${lastOuterDeworm?formatDateShort(formatDate(lastOuterDeworm)):'—'}</div>
         </div>
         <div style="background:${vaccineOverdue?'#FFF5F5':'var(--bg-soft)'};border-radius:10px;padding:10px;border-left:3px solid ${vaccineOverdue?'var(--danger)':'var(--success)'};">
           <div style="font-size:11px;color:var(--text-soft);">💉 疫苗</div>
@@ -2813,8 +2831,12 @@ function openPetModal(id) {
       <div class="form-group" style="max-width:80px"><label>体重</label><input type="number" class="input" id="pWeight" value="${p.weight||''}" min="0" step="0.1"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>驱虫间隔(天)</label><input type="number" class="input" id="pDewormInterval" value="${p.dewormInterval||90}" min="1"></div>
-      <div class="form-group"><label>上次驱虫</label><input type="date" class="input" id="pLastDeworm" value="${p.lastDeworm||''}"></div>
+      <div class="form-group"><label>内驱间隔(天)</label><input type="number" class="input" id="pInnerDewormInterval" value="${p.innerDewormInterval||90}" min="1"></div>
+      <div class="form-group"><label>上次内驱</label><input type="date" class="input" id="pLastInnerDeworm" value="${p.lastInnerDeworm||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>外驱间隔(天)</label><input type="number" class="input" id="pOuterDewormInterval" value="${p.outerDewormInterval||90}" min="1"></div>
+      <div class="form-group"><label>上次外驱</label><input type="date" class="input" id="pLastOuterDeworm" value="${p.lastOuterDeworm||''}"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label>洗澡间隔(天)</label><input type="number" class="input" id="pBathInterval" value="${p.bathInterval||30}" min="1"></div>
@@ -2837,8 +2859,11 @@ function savePet(id) {
     breed: document.getElementById('pBreed').value.trim(),
     birthDate: document.getElementById('pBirthDate').value,
     weight: parseFloat(document.getElementById('pWeight').value) || 0,
-    dewormInterval: parseInt(document.getElementById('pDewormInterval').value) || 90,
-    lastDeworm: document.getElementById('pLastDeworm').value,
+    dewormInterval: parseInt(document.getElementById('pInnerDewormInterval').value) || 90, // 兼容旧字段
+    innerDewormInterval: parseInt(document.getElementById('pInnerDewormInterval').value) || 90,
+    lastInnerDeworm: document.getElementById('pLastInnerDeworm').value,
+    outerDewormInterval: parseInt(document.getElementById('pOuterDewormInterval').value) || 90,
+    lastOuterDeworm: document.getElementById('pLastOuterDeworm').value,
     bathInterval: parseInt(document.getElementById('pBathInterval').value) || 30,
     lastBath: document.getElementById('pLastBath').value,
     vaccineInterval: parseInt(document.getElementById('pVaccineInterval').value) || 365,
