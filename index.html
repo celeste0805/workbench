@@ -1368,10 +1368,11 @@ function renderDashboard() {
     dashWork.innerHTML = todayTasks.slice(0, 5).map(t => {
       const carriedTag = t.carriedFrom ? `<span style="font-size:10px;color:var(--warning);background:#FFF3E0;padding:1px 5px;border-radius:4px;margin-left:4px;">⏩</span>` : '';
       const noteIcon = t.note && t.note.trim() ? ' 📝' : '';
+      const doneTime = t.done && t.doneAt ? `<span style="font-size:10px;color:var(--success);margin-left:4px;">✅ ${formatTime(t.doneAt)}</span>` : '';
       return `
       <div class="task-item">
         <div class="task-checkbox ${t.done?'checked':''}" onclick="toggleWorkTask('${t.id}')"></div>
-        <span class="task-text ${t.done?'done':''}">${escapeHtml(t.text)}${carriedTag}${noteIcon}</span>
+        <span class="task-text ${t.done?'done':''}">${escapeHtml(t.text)}${carriedTag}${noteIcon}${doneTime}</span>
         <span class="task-priority priority-${t.priority}">${t.priority==='high'?'高':t.priority==='mid'?'中':'低'}</span>
       </div>
     `;}).join('') + (todayTasks.length > 5 ? `<div style="text-align:center;margin-top:6px;font-size:12px;color:var(--text-soft);">还有 ${todayTasks.length-5} 项...</div>` : '');
@@ -1467,10 +1468,11 @@ function renderWorkTasks() {
     list.innerHTML = sorted.map(t => {
       const hasNote = t.note && t.note.trim();
       const carriedTag = t.carriedFrom ? `<span style="font-size:10px;color:var(--warning);background:#FFF3E0;padding:1px 6px;border-radius:4px;margin-left:4px;">⏩ 延续自${formatDateShort(t.carriedFrom)}</span>` : '';
+      const doneTime = t.done && t.doneAt ? `<span style="font-size:10px;color:var(--success);margin-left:4px;">✅ ${formatTime(t.doneAt)}</span>` : '';
       return `
       <div class="task-item" style="flex-wrap:wrap;">
         <div class="task-checkbox ${t.done?'checked':''}" onclick="toggleWorkTask('${t.id}')"></div>
-        <span class="task-text ${t.done?'done':''}">${escapeHtml(t.text)}${carriedTag}</span>
+        <span class="task-text ${t.done?'done':''}">${escapeHtml(t.text)}${carriedTag}${doneTime}</span>
         <span class="task-priority priority-${t.priority}">${t.priority==='high'?'高':t.priority==='mid'?'中':'低'}</span>
         <button class="btn-icon-sm" onclick="openTaskNoteModal('${t.id}')" title="备注" style="font-size:14px;">${hasNote?'📝':'🗒️'}</button>
         <button class="task-delete" onclick="deleteWorkTask('${t.id}')">✕</button>
@@ -1508,6 +1510,11 @@ function saveTaskNote(id) {
 function formatDateShort(dateStr) {
   const d = new Date(dateStr);
   return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+function formatTime(isoStr) {
+  const d = new Date(isoStr);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
 function carryOverUndoneTasks() {
@@ -1566,7 +1573,15 @@ function addWorkTask() {
 function toggleWorkTask(id) {
   const tasks = appData.workTasks[currentWorkDate] || [];
   const t = tasks.find(t => t.id === id);
-  if (t) { t.done = !t.done; save(); renderWorkTasks(); }
+  if (t) {
+    t.done = !t.done;
+    if (t.done) {
+      t.doneAt = new Date().toISOString();
+    } else {
+      delete t.doneAt;
+    }
+    save(); renderWorkTasks();
+  }
 }
 
 function deleteWorkTask(id) {
