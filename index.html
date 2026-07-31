@@ -2265,7 +2265,7 @@ function deleteOneWeight(date) { appData.weightRecords = appData.weightRecords.f
 // ========================================
 // 账单管理
 // ========================================
-const EXPENSE_CATS = ['餐饮','交通','购物','住房','娱乐','医疗','教育','人情','烘焙原料','烘焙设备','备考资料','其他'];
+const EXPENSE_CATS = ['餐饮','交通','购物','宠物','娱乐','医疗','教育','人情','烘焙原料','烘焙设备','备考资料','其他'];
 const INCOME_CATS = ['工资','副业','私房收入','理财收益','红包','其他'];
 function getCategoryOptions(type) {
   const cats = type === 'income' ? INCOME_CATS : type === 'save' ? ['定期存款','活期存款','理财转入','其他'] : EXPENSE_CATS;
