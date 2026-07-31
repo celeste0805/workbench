@@ -2709,6 +2709,25 @@ function renderPetList() {
   document.getElementById('petRecordsCard').style.display = '';
   container.innerHTML = pets.map(p => {
     const now = new Date();
+    // 自动计算年龄
+    let ageStr = '';
+    if (p.birthDate) {
+      const birth = new Date(p.birthDate);
+      let years = now.getFullYear() - birth.getFullYear();
+      let months = now.getMonth() - birth.getMonth();
+      if (months < 0) { years--; months += 12; }
+      if (years > 0) {
+        ageStr = years + '岁' + (months > 0 ? months + '个月' : '');
+      } else if (months > 0) {
+        ageStr = months + '个月';
+      } else {
+        const days = Math.floor((now - birth) / (1000 * 60 * 60 * 24));
+        ageStr = days + '天';
+      }
+    } else if (p.age) {
+      // 兼容旧数据
+      ageStr = p.age + '岁';
+    }
     // 计算驱虫倒计时
     const lastDeworm = p.lastDeworm ? new Date(p.lastDeworm) : null;
     const dewormDue = lastDeworm ? new Date(lastDeworm.getTime() + p.dewormInterval * 24 * 60 * 60 * 1000) : null;
@@ -2734,7 +2753,7 @@ function renderPetList() {
           <span style="font-size:24px;">${p.emoji||'🐱'}</span>
           <div>
             <div style="font-weight:700;font-size:15px;">${escapeHtml(p.name)}</div>
-            <div style="font-size:11px;color:var(--text-soft);">${p.breed||''}${p.age?' · '+p.age+'岁':''}${p.weight?' · '+p.weight+'kg':''}</div>
+            <div style="font-size:11px;color:var(--text-soft);">${p.breed||''}${ageStr?' · '+ageStr:''}${p.weight?' · '+p.weight+'kg':''}${p.birthDate?' · 🎂'+formatDateShort(p.birthDate):''}</div>
           </div>
         </div>
         <div style="display:flex;gap:4px;">
@@ -2779,7 +2798,7 @@ function openPetModal(id) {
     </div>
     <div class="form-row">
       <div class="form-group"><label>品种</label><input type="text" class="input" id="pBreed" value="${escapeHtml(p.breed||'')}" placeholder="如：英短"></div>
-      <div class="form-group" style="max-width:80px"><label>年龄</label><input type="number" class="input" id="pAge" value="${p.age||''}" min="0" step="0.5"></div>
+      <div class="form-group" style="max-width:120px"><label>出生日期</label><input type="date" class="input" id="pBirthDate" value="${p.birthDate||''}"></div>
       <div class="form-group" style="max-width:80px"><label>体重</label><input type="number" class="input" id="pWeight" value="${p.weight||''}" min="0" step="0.1"></div>
     </div>
     <div class="form-row">
@@ -2805,7 +2824,7 @@ function savePet(id) {
     id: id || 'p' + Date.now(),
     name, emoji: document.getElementById('pEmoji').value,
     breed: document.getElementById('pBreed').value.trim(),
-    age: parseFloat(document.getElementById('pAge').value) || 0,
+    birthDate: document.getElementById('pBirthDate').value,
     weight: parseFloat(document.getElementById('pWeight').value) || 0,
     dewormInterval: parseInt(document.getElementById('pDewormInterval').value) || 90,
     lastDeworm: document.getElementById('pLastDeworm').value,
