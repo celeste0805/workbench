@@ -1331,8 +1331,8 @@ function switchView(viewName) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.nav-btn[data-view="${viewName}"]`).classList.add('active');
 
-  if (viewName === 'dashboard') renderDashboard();
-  if (viewName === 'work') renderWorkTasks();
+  if (viewName === 'dashboard') { carryOverUndoneTasks(); renderDashboard(); }
+  if (viewName === 'work') { carryOverUndoneTasks(); renderWorkTasks(); }
   if (viewName === 'study') renderStudy();
   if (viewName === 'baking') renderBaking();
   if (viewName === 'weight') renderWeight();
@@ -1365,13 +1365,16 @@ function renderDashboard() {
   if (todayTasks.length === 0) {
     dashWork.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>今天还没有工作计划</p></div>';
   } else {
-    dashWork.innerHTML = todayTasks.slice(0, 5).map(t => `
+    dashWork.innerHTML = todayTasks.slice(0, 5).map(t => {
+      const carriedTag = t.carriedFrom ? `<span style="font-size:10px;color:var(--warning);background:#FFF3E0;padding:1px 5px;border-radius:4px;margin-left:4px;">⏩</span>` : '';
+      const noteIcon = t.note && t.note.trim() ? ' 📝' : '';
+      return `
       <div class="task-item">
         <div class="task-checkbox ${t.done?'checked':''}" onclick="toggleWorkTask('${t.id}')"></div>
-        <span class="task-text ${t.done?'done':''}">${escapeHtml(t.text)}</span>
+        <span class="task-text ${t.done?'done':''}">${escapeHtml(t.text)}${carriedTag}${noteIcon}</span>
         <span class="task-priority priority-${t.priority}">${t.priority==='high'?'高':t.priority==='mid'?'中':'低'}</span>
       </div>
-    `).join('') + (todayTasks.length > 5 ? `<div style="text-align:center;margin-top:6px;font-size:12px;color:var(--text-soft);">还有 ${todayTasks.length-5} 项...</div>` : '');
+    `;}).join('') + (todayTasks.length > 5 ? `<div style="text-align:center;margin-top:6px;font-size:12px;color:var(--text-soft);">还有 ${todayTasks.length-5} 项...</div>` : '');
   }
 
   const todayLog = appData.studyLogs.filter(l => l.date === todayStr);
@@ -1461,16 +1464,90 @@ function renderWorkTasks() {
   } else {
     const priorityOrder = { high: 0, mid: 1, low: 2 };
     const sorted = [...tasks].sort((a,b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-    list.innerHTML = sorted.map(t => `
-      <div class="task-item">
+    list.innerHTML = sorted.map(t => {
+      const hasNote = t.note && t.note.trim();
+      const carriedTag = t.carriedFrom ? `<span style="font-size:10px;color:var(--warning);background:#FFF3E0;padding:1px 6px;border-radius:4px;margin-left:4px;">⏩ 延续自${formatDateShort(t.carriedFrom)}</span>` : '';
+      return `
+      <div class="task-item" style="flex-wrap:wrap;">
         <div class="task-checkbox ${t.done?'checked':''}" onclick="toggleWorkTask('${t.id}')"></div>
-        <span class="task-text ${t.done?'done':''}">${escapeHtml(t.text)}</span>
+        <span class="task-text ${t.done?'done':''}">${escapeHtml(t.text)}${carriedTag}</span>
         <span class="task-priority priority-${t.priority}">${t.priority==='high'?'高':t.priority==='mid'?'中':'低'}</span>
+        <button class="btn-icon-sm" onclick="openTaskNoteModal('${t.id}')" title="备注" style="font-size:14px;">${hasNote?'📝':'🗒️'}</button>
         <button class="task-delete" onclick="deleteWorkTask('${t.id}')">✕</button>
+        ${hasNote ? `<div style="width:100%;margin-left:28px;margin-top:2px;padding:6px 10px;background:var(--bg-soft);border-radius:8px;font-size:12px;color:var(--text-soft);border-left:3px solid var(--warning);">${escapeHtml(t.note)}</div>` : ''}
       </div>
-    `).join('');
+    `;}).join('');
   }
   renderWorkWeeklyStats();
+}
+
+function openTaskNoteModal(id) {
+  const tasks = appData.workTasks[currentWorkDate] || [];
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  showModal(`
+    <div class="modal-title">📝 任务备注 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div style="margin-bottom:10px;padding:10px;background:var(--bg-soft);border-radius:10px;">
+      <div style="font-weight:600;margin-bottom:4px;">${escapeHtml(t.text)}</div>
+      <div style="font-size:12px;color:var(--text-soft);">优先级：${t.priority==='high'?'高':t.priority==='mid'?'中':'低'} ${t.done?'| 已完成':'| 未完成'}</div>
+    </div>
+    <div class="form-group"><label>问题备注 / 进展记录</label><textarea class="textarea" id="taskNoteInput" style="min-height:100px;" placeholder="记录任务遇到的问题、卡点、进展...">${escapeHtml(t.note||'')}</textarea></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveTaskNote('${id}')">保存备注</button>
+  `);
+}
+
+function saveTaskNote(id) {
+  const tasks = appData.workTasks[currentWorkDate] || [];
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  t.note = document.getElementById('taskNoteInput').value.trim();
+  save(); closeModal(); renderWorkTasks();
+  showToast('备注已保存 ✓');
+}
+
+function formatDateShort(dateStr) {
+  const d = new Date(dateStr);
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+function carryOverUndoneTasks() {
+  const today = formatDate(new Date());
+  if (currentWorkDate === today) {
+    // 只有查看今天时才执行延续逻辑
+    const todayTasks = appData.workTasks[today] || [];
+    const carriedIds = new Set(todayTasks.filter(t => t.carriedFrom).map(t => {
+      // 尝试匹配之前日期的同名任务
+      return t.text + '|' + t.priority;
+    }));
+
+    // 检查今天之前7天的未完成任务
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      const dateStr = formatDate(d);
+      const tasks = appData.workTasks[dateStr] || [];
+      const undone = tasks.filter(t => !t.done);
+      for (const t of undone) {
+        // 检查今天是否已经延续过这个任务（按文本去重）
+        const key = t.text + '|' + t.priority;
+        if (carriedIds.has(key)) continue;
+        carriedIds.add(key);
+        // 延续到今天
+        if (!appData.workTasks[today]) appData.workTasks[today] = [];
+        appData.workTasks[today].push({
+          id: uid(),
+          text: t.text,
+          priority: t.priority,
+          done: false,
+          note: t.note || '',
+          carriedFrom: dateStr
+        });
+      }
+    }
+    // 如果有延续的任务，保存
+    if (appData.workTasks[today].length > todayTasks.length) {
+      save();
+    }
+  }
 }
 
 function addWorkTask() {
