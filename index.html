@@ -2646,6 +2646,12 @@ function renderPetList() {
     const bathDays = bathDue ? Math.ceil((bathDue - now) / (1000 * 60 * 60 * 24)) : null;
     const bathOverdue = bathDays !== null && bathDays < 0;
 
+    // 计算疫苗倒计时
+    const lastVaccine = p.lastVaccine ? new Date(p.lastVaccine) : null;
+    const vaccineDue = lastVaccine ? new Date(lastVaccine.getTime() + p.vaccineInterval * 24 * 60 * 60 * 1000) : null;
+    const vaccineDays = vaccineDue ? Math.ceil((vaccineDue - now) / (1000 * 60 * 60 * 24)) : null;
+    const vaccineOverdue = vaccineDays !== null && vaccineDays < 0;
+
     return `
     <div class="pet-card" style="border:2px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;background:var(--bg-card);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -2661,13 +2667,20 @@ function renderPetList() {
           <button class="btn-icon-sm" onclick="deletePet('${p.id}')">🗑</button>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
         <div style="background:${dewormOverdue?'#FFF5F5':'var(--bg-soft)'};border-radius:10px;padding:10px;border-left:3px solid ${dewormOverdue?'var(--danger)':'var(--info)'};">
           <div style="font-size:11px;color:var(--text-soft);">💊 驱虫</div>
           <div style="font-weight:600;font-size:13px;color:${dewormOverdue?'var(--danger)':'var(--text-main)'};">
             ${dewormDays !== null ? (dewormOverdue ? `超期${Math.abs(dewormDays)}天` : `还有${dewormDays}天`) : '未记录'}
           </div>
           <div style="font-size:10px;color:var(--text-soft);">每${p.dewormInterval||90}天 · 上次${lastDeworm?formatDateShort(formatDate(lastDeworm)):'—'}</div>
+        </div>
+        <div style="background:${vaccineOverdue?'#FFF5F5':'var(--bg-soft)'};border-radius:10px;padding:10px;border-left:3px solid ${vaccineOverdue?'var(--danger)':'var(--success)'};">
+          <div style="font-size:11px;color:var(--text-soft);">💉 疫苗</div>
+          <div style="font-weight:600;font-size:13px;color:${vaccineOverdue?'var(--danger)':'var(--text-main)'};">
+            ${vaccineDays !== null ? (vaccineOverdue ? `超期${Math.abs(vaccineDays)}天` : `还有${vaccineDays}天`) : '未记录'}
+          </div>
+          <div style="font-size:10px;color:var(--text-soft);">每${p.vaccineInterval||365}天 · 上次${lastVaccine?formatDateShort(formatDate(lastVaccine)):'—'}</div>
         </div>
         <div style="background:${bathOverdue?'#FFF5F5':'var(--bg-soft)'};border-radius:10px;padding:10px;border-left:3px solid ${bathOverdue?'var(--danger)':'var(--warning)'};">
           <div style="font-size:11px;color:var(--text-soft);">🛁 洗澡</div>
@@ -2702,6 +2715,10 @@ function openPetModal(id) {
       <div class="form-group"><label>洗澡间隔(天)</label><input type="number" class="input" id="pBathInterval" value="${p.bathInterval||30}" min="1"></div>
       <div class="form-group"><label>上次洗澡</label><input type="date" class="input" id="pLastBath" value="${p.lastBath||''}"></div>
     </div>
+    <div class="form-row">
+      <div class="form-group"><label>疫苗间隔(天)</label><input type="number" class="input" id="pVaccineInterval" value="${p.vaccineInterval||365}" min="1"></div>
+      <div class="form-group"><label>上次疫苗</label><input type="date" class="input" id="pLastVaccine" value="${p.lastVaccine||''}"></div>
+    </div>
     <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="savePet('${id||''}')">保存</button>
   `);
 }
@@ -2719,6 +2736,8 @@ function savePet(id) {
     lastDeworm: document.getElementById('pLastDeworm').value,
     bathInterval: parseInt(document.getElementById('pBathInterval').value) || 30,
     lastBath: document.getElementById('pLastBath').value,
+    vaccineInterval: parseInt(document.getElementById('pVaccineInterval').value) || 365,
+    lastVaccine: document.getElementById('pLastVaccine').value,
   };
   if (!appData.pets) appData.pets = [];
   if (id) {
@@ -2786,11 +2805,12 @@ function savePetRecord() {
   if (!appData.petRecords) appData.petRecords = [];
   appData.petRecords.push({ id: uid(), petId, type, date, note });
 
-  // 自动更新宠物的上次驱虫/洗澡日期
+  // 自动更新宠物的上次日期
   const pet = (appData.pets||[]).find(p => p.id === petId);
   if (pet) {
     if (type === 'deworm') pet.lastDeworm = date;
     if (type === 'bath') pet.lastBath = date;
+    if (type === 'vaccine') pet.lastVaccine = date;
   }
 
   save(); closeModal(); renderPets();
