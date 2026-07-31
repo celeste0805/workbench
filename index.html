@@ -1280,7 +1280,14 @@ const DB = {
     saveGoal: { target: 50000, current: 0 },
     pets: [],
     petRecords: [],
-    specialDates: [],
+    specialDates: [
+      { id:'sd_default_1', name:'老公生日', emoji:'🎂', type:'birthday', calendar:'solar', month:6, day:22, note:'' },
+      { id:'sd_default_2', name:'我的生日', emoji:'🎂', type:'birthday', calendar:'lunar', lunarMonth:8, lunarDay:5, note:'' },
+      { id:'sd_default_3', name:'结婚纪念日', emoji:'💍', type:'anniversary', calendar:'solar', month:10, day:21, startYear:2024, note:'' },
+      { id:'sd_default_4', name:'妈妈生日', emoji:'🎂', type:'birthday', calendar:'lunar', lunarMonth:10, lunarDay:16, note:'' },
+      { id:'sd_default_5', name:'爸爸生日', emoji:'🎂', type:'birthday', calendar:'lunar', lunarMonth:2, lunarDay:25, note:'' },
+      { id:'sd_default_6', name:'婆婆生日', emoji:'🎂', type:'birthday', calendar:'solar', month:9, day:2, note:'' },
+    ],
   },
 
   load() {
