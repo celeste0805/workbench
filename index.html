@@ -851,6 +851,9 @@ body {
     <button class="nav-btn" data-view="pets">
       <span class="nav-icon">🐾</span><span class="nav-label">宠物</span>
     </button>
+    <button class="nav-btn" data-view="special">
+      <span class="nav-icon">💝</span><span class="nav-label">纪念日</span>
+    </button>
     <button class="nav-btn" data-view="stats">
       <span class="nav-icon">📊</span><span class="nav-label">统计</span>
     </button>
@@ -1208,6 +1211,22 @@ body {
     </div>
   </div>
 
+  <!-- ========== 特殊日期/纪念日 ========== -->
+  <div class="view" id="view-special">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">💝</span>纪念日与倒计时</div>
+        <button class="btn btn-primary btn-sm" onclick="openSpecialDateModal()">+ 添加日期</button>
+      </div>
+      <div id="specialDateList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📅</span>即将到来的日子</div>
+      <div id="upcomingSpecialDates"></div>
+    </div>
+  </div>
+
   <!-- ========== 统计与周报 ========== -->
   <div class="view" id="view-stats">
     <div class="stat-grid" id="statGrid"></div>
@@ -1261,6 +1280,7 @@ const DB = {
     saveGoal: { target: 50000, current: 0 },
     pets: [],
     petRecords: [],
+    specialDates: [],
   },
 
   load() {
@@ -1283,6 +1303,7 @@ if (!appData.materials) appData.materials = [];
 if (!appData.recipeCosts) appData.recipeCosts = [];
 if (!appData.pets) appData.pets = [];
 if (!appData.petRecords) appData.petRecords = [];
+if (!appData.specialDates) appData.specialDates = [];
 // 迁移老备考数据到新结构
 if (!appData.exams) {
   appData.exams = [];
@@ -1375,6 +1396,7 @@ function switchView(viewName) {
   if (viewName === 'weight') renderWeight();
   if (viewName === 'bills') renderBills();
   if (viewName === 'pets') renderPets();
+  if (viewName === 'special') renderSpecialDates();
   if (viewName === 'stats') renderStats();
 }
 
@@ -1459,6 +1481,11 @@ function renderReminders() {
   appData.studyMilestones.filter(m => !m.done).forEach(m => {
     reminders.push({ date: m.date, title: '备考里程碑', desc: m.title, type: 'study' });
   });
+  // 特殊日期提醒
+  const specialReminders = getSpecialDateReminders();
+  specialReminders.forEach(sd => {
+    reminders.push({ date: sd.nextDate, title: `${sd.emoji||'💝'} ${sd.name}`, desc: `${sd.calendar==='lunar'?'🌙 农历':'☀️ 公历'} · 还有${sd.diffDays}天`, type: 'special' });
+  });
   reminders.sort((a,b) => new Date(a.date) - new Date(b.date));
 
   const today = new Date(); today.setHours(0,0,0,0);
@@ -1468,7 +1495,7 @@ function renderReminders() {
     return;
   }
 
-  container.innerHTML = reminders.slice(0, 6).map(r => {
+  container.innerHTML = reminders.slice(0, 8).map(r => {
     const d = new Date(r.date);
     const diff = Math.ceil((d - today) / (1000*60*60*24));
     const urgent = diff <= 3 && diff >= 0;
@@ -2821,6 +2848,283 @@ function deletePetRecord(id) {
   if (!confirm('确定删除这条记录吗？')) return;
   appData.petRecords = (appData.petRecords||[]).filter(r => r.id !== id);
   save(); renderPetRecords();
+}
+
+// ========================================
+// 农历转换（紧凑数据表）
+// ========================================
+const LUNAR_DATA = {"2020":{"base":"2020-01-25","days":[30,29,30,30,29,30,29,30,29,30,29,30],"leap":4,"leapDays":29},"2021":{"base":"2021-02-12","days":[29,30,30,29,30,29,30,29,30,29,30,29],"leap":0,"leapDays":0},"2022":{"base":"2022-02-01","days":[29,30,30,30,29,30,29,30,29,30,29,30],"leap":0,"leapDays":0},"2023":{"base":"2023-01-22","days":[30,29,30,29,30,30,29,30,29,30,29,30],"leap":2,"leapDays":29},"2024":{"base":"2024-02-10","days":[29,30,29,29,30,30,29,30,30,30,29,29],"leap":0,"leapDays":0},"2025":{"base":"2025-01-29","days":[30,29,30,29,29,30,30,29,30,30,30,29],"leap":6,"leapDays":29},"2026":{"base":"2026-02-17","days":[29,30,29,30,29,29,30,30,29,30,30,29],"leap":0,"leapDays":0},"2027":{"base":"2027-02-06","days":[30,29,30,29,30,29,29,30,30,29,30,30],"leap":0,"leapDays":0},"2028":{"base":"2028-01-26","days":[29,30,30,29,30,29,30,29,29,30,30,29],"leap":5,"leapDays":30},"2029":{"base":"2029-02-13","days":[30,30,29,30,29,30,29,30,29,30,29,30],"leap":0,"leapDays":0},"2030":{"base":"2030-02-03","days":[29,30,30,29,30,30,29,30,29,30,29,30],"leap":0,"leapDays":0},"2031":{"base":"2031-01-23","days":[30,29,30,30,29,30,29,30,29,30,29,30],"leap":3,"leapDays":29},"2032":{"base":"2032-02-11","days":[30,29,30,29,30,30,29,30,29,30,29,30],"leap":0,"leapDays":0},"2033":{"base":"2033-01-31","days":[29,30,30,29,30,29,30,30,29,30,29,30],"leap":7,"leapDays":29},"2034":{"base":"2034-02-19","days":[29,30,29,30,29,30,30,29,30,29,30,29],"leap":0,"leapDays":0},"2035":{"base":"2035-02-08","days":[30,29,30,29,30,29,30,29,30,30,29,30],"leap":0,"leapDays":0}};
+
+// 将农历日期转换为公历日期
+// lunarMonth: 1-12, lunarDay: 1-30, year: 公历年份（目标年份）
+function lunarToSolar(lunarMonth, lunarDay, year) {
+  const info = LUNAR_DATA[String(year)];
+  if (!info) return null;
+
+  const baseDate = new Date(info.base + 'T00:00:00');
+  const days = info.days;
+  const leapMonth = info.leap;
+  const leapDays = info.leapDays;
+
+  // 计算从正月初一到目标农历日期的偏移天数
+  let offset = 0;
+  let targetMonth = lunarMonth;
+  let isLeap = false;
+
+  // 遍历月份累计天数
+  for (let m = 1; m < lunarMonth; m++) {
+    offset += days[m - 1];
+    // 如果当前月是闰月且已过，加上闰月天数
+    if (leapMonth > 0 && m === leapMonth) {
+      offset += leapDays;
+    }
+  }
+
+  offset += (lunarDay - 1);
+
+  // 计算结果日期
+  const result = new Date(baseDate);
+  result.setDate(result.getDate() + offset);
+  return formatDate(result);
+}
+
+// 计算农历日期在今年的公历日期（用于倒计时）
+function getLunarDateThisYear(lunarMonth, lunarDay) {
+  const today = new Date();
+  const thisYear = today.getFullYear();
+
+  // 先算今年的
+  let solarDate = lunarToSolar(lunarMonth, lunarDay, thisYear);
+  if (!solarDate) return null;
+
+  const solarDateObj = new Date(solarDate + 'T00:00:00');
+  const todayObj = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  // 如果今年的已经过了，算明年的
+  if (solarDateObj < todayObj) {
+    const nextYear = thisYear + 1;
+    solarDate = lunarToSolar(lunarMonth, lunarDay, nextYear);
+    if (!solarDate) return null;
+  }
+
+  return solarDate;
+}
+
+// 计算下一个纪念日日期（公历）
+function getNextSolarDate(month, day) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const thisYear = today.getFullYear();
+
+  let targetDate = new Date(thisYear, month - 1, day);
+  if (targetDate < today) {
+    targetDate = new Date(thisYear + 1, month - 1, day);
+  }
+  return formatDate(targetDate);
+}
+
+// 获取特殊日期的下一个到来日期
+function getNextDate(specialDate) {
+  if (specialDate.calendar === 'lunar') {
+    return getLunarDateThisYear(specialDate.lunarMonth, specialDate.lunarDay);
+  } else {
+    return getNextSolarDate(specialDate.month, specialDate.day);
+  }
+}
+
+// ========================================
+// 特殊日期/纪念日管理
+// ========================================
+function renderSpecialDates() {
+  const container = document.getElementById('specialDateList');
+  const dates = appData.specialDates || [];
+
+  if (dates.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">💝</div><p>还没有添加纪念日，点击上方按钮添加吧</p></div>';
+    document.getElementById('upcomingSpecialDates').innerHTML = '';
+    return;
+  }
+
+  // 按下一个到来日期排序
+  const today = new Date(); today.setHours(0,0,0,0);
+  const withNext = dates.map(d => {
+    const nextDate = getNextDate(d);
+    const nextObj = new Date(nextDate + 'T00:00:00');
+    const diffDays = Math.ceil((nextObj - today) / (1000 * 60 * 60 * 24));
+    return { ...d, nextDate, diffDays };
+  }).sort((a, b) => a.diffDays - b.diffDays);
+
+  // 全部纪念日列表
+  container.innerHTML = withNext.map(d => {
+    const isUrgent = d.diffDays <= 7;
+    const isToday = d.diffDays === 0;
+    const calendarLabel = d.calendar === 'lunar' ? '🌙 农历' : '☀️ 公历';
+    const dateDisplay = d.calendar === 'lunar'
+      ? `${d.lunarMonth}月${d.lunarDay}日`
+      : `${d.month}月${d.day}日`;
+
+    // 计算距离/周年
+    let occasion = '';
+    if (d.type === 'anniversary' && d.startYear) {
+      const years = today.getFullYear() - d.startYear;
+      if (d.diffDays <= 0) occasion = ` · ${years}周年`;
+    }
+
+    return `
+    <div style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;background:${isToday?'var(--pink-light)':isUrgent?'var(--bg-soft)':'var(--bg-card)'};border:1px solid ${isToday?'var(--pink)':'var(--border)'};margin-bottom:8px;transition:var(--transition);">
+      <div style="font-size:28px;flex-shrink:0;">${d.emoji || '💝'}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:15px;">${escapeHtml(d.name)}${occasion}</div>
+        <div style="font-size:12px;color:var(--text-soft);">${calendarLabel} · ${dateDisplay}${d.note ? ' · ' + escapeHtml(d.note) : ''}</div>
+        <div style="font-size:12px;color:var(--text-soft);margin-top:2px;">📅 下次：${formatDateChinese(d.nextDate)}</div>
+      </div>
+      <div style="text-align:center;flex-shrink:0;min-width:60px;">
+        <div style="font-size:22px;font-weight:800;color:${isToday?'var(--pink)':isUrgent?'var(--warning)':'var(--primary)'};">${isToday?'🎉':d.diffDays}</div>
+        <div style="font-size:11px;color:var(--text-soft);">${isToday?'就是今天！':'天后'}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <button class="btn btn-soft btn-sm" onclick="openSpecialDateModal('${d.id}')">编辑</button>
+        <button class="btn-icon-sm" onclick="deleteSpecialDate('${d.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // 即将到来的日子（前6个）
+  const upcoming = document.getElementById('upcomingSpecialDates');
+  if (withNext.length === 0) {
+    upcoming.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>暂无数据</p></div>';
+  } else {
+    upcoming.innerHTML = withNext.slice(0, 6).map((d, i) => {
+      const isToday = d.diffDays === 0;
+      const isUrgent = d.diffDays <= 3 && d.diffDays > 0;
+      return `
+      <div class="reminder-item ${isUrgent?'reminder-urgent':''}">
+        <div class="reminder-date">
+          <div class="reminder-day">${isToday?'🎉':d.diffDays}</div>
+          <div class="reminder-month">${isToday?'今天':'天后'}</div>
+        </div>
+        <div class="reminder-info">
+          <div class="reminder-title">${d.emoji||'💝'} ${escapeHtml(d.name)} ${isToday?'<span class="tag status-pending">今天！</span>':isUrgent?'<span class="tag status-pending">即将到来</span>':''}</div>
+          <div class="reminder-desc">📅 ${formatDateChinese(d.nextDate)}${d.calendar==='lunar'?' · 🌙 农历':''}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function openSpecialDateModal(id) {
+  const d = id ? (appData.specialDates||[]).find(x => x.id === id) : {};
+  const calendar = d.calendar || 'solar';
+  const type = d.type || 'birthday';
+  showModal(`
+    <div class="modal-title">💝 ${id?'编辑':'添加'}纪念日 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2"><label>名称</label><input type="text" class="input" id="sdName" value="${escapeHtml(d.name||'')}" placeholder="如：老公生日、结婚纪念日"></div>
+      <div class="form-group" style="flex:1"><label>图标</label><input type="text" class="input" id="sdEmoji" value="${escapeHtml(d.emoji||'💝')}" placeholder="💝" maxlength="4"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>类型</label><select class="select" id="sdType" onchange="toggleSpecialDateType()">
+        <option value="birthday" ${type==='birthday'?'selected':''}>🎂 生日</option>
+        <option value="anniversary" ${type==='anniversary'?'selected':''}>💍 纪念日</option>
+        <option value="festival" ${type==='festival'?'selected':''}>🎊 节日</option>
+        <option value="other" ${type==='other'?'selected':''}>📌 其他</option>
+      </select></div>
+      <div class="form-group"><label>日历类型</label><select class="select" id="sdCalendar" onchange="toggleSpecialDateCalendar()">
+        <option value="solar" ${calendar==='solar'?'selected':''}>☀️ 公历</option>
+        <option value="lunar" ${calendar==='lunar'?'selected':''}>🌙 农历</option>
+      </select></div>
+    </div>
+    <div id="sdSolarFields" style="display:${calendar==='solar'?'':'none'}">
+      <div class="form-row">
+        <div class="form-group"><label>月份</label><input type="number" class="input" id="sdMonth" value="${d.month||''}" min="1" max="12" placeholder="1-12"></div>
+        <div class="form-group"><label>日期</label><input type="number" class="input" id="sdDay" value="${d.day||''}" min="1" max="31" placeholder="1-31"></div>
+      </div>
+    </div>
+    <div id="sdLunarFields" style="display:${calendar==='lunar'?'':'none'}">
+      <div class="form-row">
+        <div class="form-group"><label>农历月</label><input type="number" class="input" id="sdLunarMonth" value="${d.lunarMonth||''}" min="1" max="12" placeholder="1-12"></div>
+        <div class="form-group"><label>农历日</label><input type="number" class="input" id="sdLunarDay" value="${d.lunarDay||''}" min="1" max="30" placeholder="1-30"></div>
+      </div>
+    </div>
+    <div id="sdStartYearField" style="display:${type==='anniversary'?'':'none'}">
+      <div class="form-group"><label>起始年份（用于计算周年）</label><input type="number" class="input" id="sdStartYear" value="${d.startYear||''}" min="1900" max="2100" placeholder="如：2024"></div>
+    </div>
+    <div class="form-group"><label>备注（可选）</label><input type="text" class="input" id="sdNote" value="${escapeHtml(d.note||'')}" placeholder="如：提前一周准备礼物"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveSpecialDate('${id||''}')">保存</button>
+  `);
+}
+
+function toggleSpecialDateType() {
+  const type = document.getElementById('sdType').value;
+  document.getElementById('sdStartYearField').style.display = type === 'anniversary' ? '' : 'none';
+}
+
+function toggleSpecialDateCalendar() {
+  const cal = document.getElementById('sdCalendar').value;
+  document.getElementById('sdSolarFields').style.display = cal === 'solar' ? '' : 'none';
+  document.getElementById('sdLunarFields').style.display = cal === 'lunar' ? '' : 'none';
+}
+
+function saveSpecialDate(id) {
+  const calendar = document.getElementById('sdCalendar').value;
+  const name = document.getElementById('sdName').value.trim();
+  if (!name) { showToast('请输入名称'); return; }
+
+  const sd = {
+    id: id || 'sd' + Date.now(),
+    name,
+    emoji: document.getElementById('sdEmoji').value || '💝',
+    type: document.getElementById('sdType').value,
+    calendar,
+    note: document.getElementById('sdNote').value.trim(),
+  };
+
+  if (calendar === 'lunar') {
+    sd.lunarMonth = parseInt(document.getElementById('sdLunarMonth').value) || 1;
+    sd.lunarDay = parseInt(document.getElementById('sdLunarDay').value) || 1;
+    if (sd.lunarMonth < 1 || sd.lunarMonth > 12) { showToast('农历月份需在1-12之间'); return; }
+    if (sd.lunarDay < 1 || sd.lunarDay > 30) { showToast('农历日期需在1-30之间'); return; }
+  } else {
+    sd.month = parseInt(document.getElementById('sdMonth').value) || 1;
+    sd.day = parseInt(document.getElementById('sdDay').value) || 1;
+    if (sd.month < 1 || sd.month > 12) { showToast('月份需在1-12之间'); return; }
+    if (sd.day < 1 || sd.day > 31) { showToast('日期需在1-31之间'); return; }
+  }
+
+  if (sd.type === 'anniversary') {
+    sd.startYear = parseInt(document.getElementById('sdStartYear').value) || null;
+  }
+
+  if (!appData.specialDates) appData.specialDates = [];
+  if (id) {
+    const idx = appData.specialDates.findIndex(x => x.id === id);
+    appData.specialDates[idx] = sd;
+  } else {
+    appData.specialDates.push(sd);
+  }
+
+  save(); closeModal(); renderSpecialDates();
+  showToast('纪念日已保存 ✓');
+}
+
+function deleteSpecialDate(id) {
+  if (!confirm('确定删除这个纪念日吗？')) return;
+  appData.specialDates = (appData.specialDates||[]).filter(d => d.id !== id);
+  save(); renderSpecialDates();
+  showToast('已删除');
+}
+
+// 获取特殊日期提醒（用于首页仪表盘）
+function getSpecialDateReminders() {
+  const dates = appData.specialDates || [];
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  return dates.map(d => {
+    const nextDate = getNextDate(d);
+    const nextObj = new Date(nextDate + 'T00:00:00');
+    const diffDays = Math.ceil((nextObj - today) / (1000 * 60 * 60 * 24));
+    return { ...d, nextDate, diffDays };
+  }).sort((a, b) => a.diffDays - b.diffDays);
 }
 
 // ========================================
