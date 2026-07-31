@@ -1286,11 +1286,14 @@ const DB = {
     weightGoal: { target: 60, targetDate: '2026-12-31', startWeight: 77 },
     bills: [{id:"ms8u4y896tag",date:"2026-07-31",type:"expense",category:"交通",amount:275.25,note:"加油"},{id:"ms8we5mia5kc",date:"2026-07-31",type:"expense",category:"餐饮",amount:75,note:"药膳鸡"},{id:"ms8yecu71tkk",date:"2026-07-31",type:"expense",category:"购物",amount:123,note:"好想来买零食"}],
     saveGoal: { target: 50000, current: 0 },
-    pets: [],
+    pets: [
+      { id:'p1785508696479', name:'九月', emoji:'🐱', breed:'狮子猫', birthDate:'2024-03-01', weight:0, dewormInterval:90, lastDeworm:'2026-06-06', bathInterval:365, lastBath:'2026-02-10', vaccineInterval:365, lastVaccine:'' },
+      { id:'p1785508769601', name:'初二', emoji:'🐱', breed:'狮子猫', birthDate:'2025-08-01', weight:0, dewormInterval:90, lastDeworm:'2026-06-06', bathInterval:365, lastBath:'2026-02-10', vaccineInterval:365, lastVaccine:'' },
+    ],
     petRecords: [],
     specialDates: [
       { id:'sd_default_1', name:'老公生日', emoji:'🎂', type:'birthday', calendar:'solar', month:6, day:22, note:'' },
-      { id:'sd_default_2', name:'我的生日', emoji:'🎂', type:'birthday', calendar:'lunar', lunarMonth:8, lunarDay:5, note:'' },
+      { id:'sd_default_2', name:'我的生日', emoji:'🎂', type:'birthday', calendar:'lunar', lunarMonth:6, lunarDay:21, note:'' },
       { id:'sd_default_3', name:'结婚纪念日', emoji:'💍', type:'anniversary', calendar:'solar', month:10, day:21, startYear:2024, note:'' },
       { id:'sd_default_4', name:'妈妈生日', emoji:'🎂', type:'birthday', calendar:'lunar', lunarMonth:10, lunarDay:16, note:'' },
       { id:'sd_default_5', name:'爸爸生日', emoji:'🎂', type:'birthday', calendar:'lunar', lunarMonth:2, lunarDay:25, note:'' },
@@ -1303,7 +1306,15 @@ const DB = {
     if (saved) {
       try {
         const data = JSON.parse(saved);
-        return { ...this.default, ...data };
+        const merged = { ...this.default, ...data };
+        // 智能合并：如果用户本地为空但默认有预设，使用预设
+        if (this.default.pets?.length > 0 && (!data.pets || data.pets.length === 0)) {
+          merged.pets = this.default.pets;
+        }
+        if (this.default.specialDates?.length > 0 && (!data.specialDates || data.specialDates.length === 0)) {
+          merged.specialDates = this.default.specialDates;
+        }
+        return merged;
       } catch(e) { return {...this.default}; }
     }
     return {...this.default};
