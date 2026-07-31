@@ -2352,7 +2352,47 @@ function renderBillTable() {
   if (filter) bills = bills.filter(b => b.date.startsWith(filter));
   if (bills.length === 0) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">📋</div><p>暂无账单记录</p></div></td></tr>'; return; }
   const typeMap = { income:{text:'💰 收入',cls:'tx-sell'}, expense:{text:'💸 支出',cls:'tx-buy'}, save:{text:'🏦 存款',cls:'status-progress'} };
-  tbody.innerHTML = bills.map(b => `<tr><td>${formatDateChinese(b.date)}</td><td><span class="transaction-type ${typeMap[b.type].cls}">${typeMap[b.type].text}</span></td><td>${escapeHtml(b.category)}</td><td style="font-weight:600;color:${b.type==='income'||b.type==='save'?'var(--success)':'var(--danger)'}">${b.type==='income'||b.type==='save'?'+':'-'}¥${b.amount.toFixed(2)}</td><td style="font-size:12px;color:var(--text-soft);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.note||'—')}</td><td><button class="btn-icon-sm" onclick="deleteBill('${b.id}')">🗑</button></td></tr>`).join('');
+  tbody.innerHTML = bills.map(b => `<tr><td>${formatDateChinese(b.date)}</td><td><span class="transaction-type ${typeMap[b.type].cls}">${typeMap[b.type].text}</span></td><td>${escapeHtml(b.category)}</td><td style="font-weight:600;color:${b.type==='income'||b.type==='save'?'var(--success)':'var(--danger)'}">${b.type==='income'||b.type==='save'?'+':'-'}¥${b.amount.toFixed(2)}</td><td style="font-size:12px;color:var(--text-soft);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.note||'—')}</td><td><button class="btn btn-soft btn-sm" onclick="openBillModal('${b.id}')">编辑</button><button class="btn-icon-sm" onclick="deleteBill('${b.id}')">🗑</button></td></tr>`).join('');
+}
+
+function openBillModal(id) {
+  const b = appData.bills.find(x => x.id === id);
+  if (!b) return;
+  showModal(`
+    <div class="modal-title">✏️ 编辑账单 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-row">
+      <div class="form-group"><label>日期</label><input type="date" class="input" id="bDate" value="${b.date}"></div>
+      <div class="form-group"><label>类型</label><select class="select" id="bType" onchange="updateBillModalCategory()">${['expense','income','save'].map(t=>`<option value="${t}" ${b.type===t?'selected':''}>${t==='expense'?'支出':t==='income'?'收入':'存款'}</option>`).join('')}</select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>分类</label><select class="select" id="bCategory">${getCategoryOptions(b.type)}</select></div>
+      <div class="form-group"><label>金额(¥)</label><input type="number" class="input" id="bAmount" value="${b.amount}" step="0.01"></div>
+    </div>
+    <div class="form-group"><label>备注</label><input type="text" class="input" id="bNote" value="${escapeHtml(b.note||'')}" placeholder="可选"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveBill('${id}')">保存修改</button>
+  `);
+  document.getElementById('bCategory').value = b.category;
+}
+
+function updateBillModalCategory() {
+  const type = document.getElementById('bType').value;
+  const select = document.getElementById('bCategory');
+  const current = select.value;
+  select.innerHTML = getCategoryOptions(type);
+  // 尽量保留原来的选择
+  if (getCategoryOptions(type).includes(`value="${current}"`)) select.value = current;
+}
+
+function saveBill(id) {
+  const b = appData.bills.find(x => x.id === id);
+  if (!b) return;
+  b.date = document.getElementById('bDate').value;
+  b.type = document.getElementById('bType').value;
+  b.category = document.getElementById('bCategory').value;
+  b.amount = parseFloat(document.getElementById('bAmount').value) || 0;
+  b.note = document.getElementById('bNote').value.trim();
+  if (!b.amount || b.amount <= 0) { showToast('请输入有效金额'); return; }
+  save(); closeModal(); renderBills(); showToast('账单已更新 ✓');
 }
 
 function deleteBill(id) { if (!confirm('确定删除这条账单记录吗？')) return; appData.bills = appData.bills.filter(b => b.id !== id); save(); renderBills(); showToast('已删除'); }
