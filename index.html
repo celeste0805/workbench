@@ -1242,7 +1242,7 @@ body {
 // ========================================
 const DB = {
   default: {
-    workTasks: {},
+    workTasks: {"2026-07-31":[{id:"ms8b1r9nnjcw",text:"消防中心营房改造项目审核",priority:"high",done:true,doneAt:"2026-07-31T13:24:17.355Z"},{id:"ms8b2z62f24e",text:"建立一个项目签证台账",priority:"mid",done:false},{id:"ms8b3xr950n6",text:"公用工程部雨水排口闸控改造超付调整结算审核",priority:"high",done:true,doneAt:"2026-07-31T13:24:21.042Z"},{id:"ms8mraddbask",text:"合纤二部余热利用节能改造结算审核",priority:"high",done:false,note:"审核安装结算时，基本费取费5.88%，同时计入了328个监护工，已反馈给施工单位"}]},
     studyProgress: { sub1: 30, sub2: 0 },
     studyLogs: [],
     studyMilestones: [
@@ -1257,9 +1257,9 @@ const DB = {
     materials: [],
     recipeCosts: [],
     examDate: '2026-11-01',
-    weightRecords: [],
-    weightGoal: { target: 60, targetDate: '', startWeight: null },
-    bills: [],
+    weightRecords: [{date:"2026-07-30",weight:77},{date:"2026-07-31",weight:76.6}],
+    weightGoal: { target: 60, targetDate: '2026-12-31', startWeight: 77 },
+    bills: [{id:"ms8u4y896tag",date:"2026-07-31",type:"expense",category:"交通",amount:275.25,note:"加油"},{id:"ms8we5mia5kc",date:"2026-07-31",type:"expense",category:"餐饮",amount:75,note:"药膳鸡"},{id:"ms8yecu71tkk",date:"2026-07-31",type:"expense",category:"购物",amount:123,note:"好想来买零食"}],
     saveGoal: { target: 50000, current: 0 },
   },
 
