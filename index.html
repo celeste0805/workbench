@@ -1392,7 +1392,6 @@ function renderDashboard() {
   }
 
   const todayLog = appData.studyLogs.filter(l => l.date === todayStr);
-  const exam = getCurrentExam();
   const dashStudy = document.getElementById('dashStudyTasks');
   if (todayLog.length > 0) {
     dashStudy.innerHTML = todayLog.map(l => `
