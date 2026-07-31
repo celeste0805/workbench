@@ -898,6 +898,14 @@ body {
         <div id="dashWorkTasks"></div>
       </div>
 
+      <div class="card" style="background:linear-gradient(135deg, #FCE4EC, #FFF0E5);border:2px solid var(--pink);">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🎂</span>最近生日/纪念日</div>
+          <button class="btn btn-soft btn-sm" onclick="switchView('special')">全部 →</button>
+        </div>
+        <div id="dashBirthdayReminder"></div>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <div class="card-title"><span class="icon">📚</span>今日备考任务</div>
@@ -1474,7 +1482,40 @@ function renderDashboard() {
     `).join('');
   }
 
+  renderBirthdayReminder();
   renderReminders();
+}
+
+function renderBirthdayReminder() {
+  const container = document.getElementById('dashBirthdayReminder');
+  const dates = getSpecialDateReminders();
+  if (dates.length === 0) {
+    container.innerHTML = '<div class="empty-state" style="padding:16px;"><div class="icon">🎂</div><p>点击右上角"全部"添加纪念日</p></div>';
+    return;
+  }
+
+  // 取最近3个
+  const top = dates.slice(0, 3);
+  container.innerHTML = top.map(d => {
+    const isToday = d.diffDays === 0;
+    const isUrgent = d.diffDays <= 7;
+    const dateDisplay = d.calendar === 'lunar'
+      ? `农历${d.lunarMonth}月${d.lunarDay}日`
+      : `${d.month}月${d.day}日`;
+    const nextDisplay = formatDateChinese(d.nextDate);
+    return `
+    <div style="display:flex;align-items:center;gap:12px;padding:14px;background:white;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,0.05);">
+      <div style="font-size:36px;">${d.emoji || '💝'}</div>
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:15px;">${escapeHtml(d.name)}${d.type==='anniversary'&&d.startYear?' · '+(new Date().getFullYear()-d.startYear)+'周年':''}</div>
+        <div style="font-size:12px;color:var(--text-soft);">${d.calendar==='lunar'?'🌙':'☀️'} ${dateDisplay} → ${nextDisplay}</div>
+      </div>
+      <div style="text-align:center;min-width:55px;">
+        <div style="font-size:26px;font-weight:800;color:${isToday?'var(--pink)':isUrgent?'var(--warning)':'var(--primary)'};">${isToday?'🎉':d.diffDays}</div>
+        <div style="font-size:11px;color:var(--text-soft);">${isToday?'就是今天！':'天后'}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function renderReminders() {
