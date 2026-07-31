@@ -1716,6 +1716,13 @@ function renderWorkMonthSummary() {
     return deadlineDate < now;
   });
 
+  // 已完成任务列表（按完成时间倒序）
+  const doneList = allTasks.filter(t => t.done).sort((a, b) => {
+    const ta = a.doneAt ? new Date(a.doneAt) : new Date(a.date);
+    const tb = b.doneAt ? new Date(b.doneAt) : new Date(b.date);
+    return tb - ta;
+  });
+
   container.innerHTML = `
     <div class="stat-grid" style="margin-bottom:12px;">
       <div class="stat-card"><div class="stat-value">${totalTasks}</div><div class="stat-label">月总任务</div></div>
@@ -1743,14 +1750,19 @@ function renderWorkMonthSummary() {
       ${overdueList.length > 5 ? `<div style="font-size:12px;color:var(--text-soft);text-align:center;margin-top:4px;">还有 ${overdueList.length-5} 项超期...</div>` : ''}
     </div>` : ''}
 
-    ${dailyStats.length > 0 ? `
-    <div style="display:flex;gap:2px;align-items:flex-end;height:100px;margin-top:8px;overflow-x:auto;padding-bottom:18px;">
-      ${dailyStats.map(d => {
-        const barH = d.total > 0 ? Math.max(8, (d.done/d.total)*100) : 2;
-        const isToday = d.date === formatDate(new Date());
-        return `<div style="flex:1;min-width:14px;text-align:center;" title="${d.date}: ${d.done}/${d.total}"><div style="background:${isToday?'var(--primary)':'var(--bg-soft)'};border-radius:6px 6px 0 0;height:80px;display:flex;align-items:flex-end;padding:2px;border:${isToday?'2px solid var(--primary-dark)':'none'}"><div style="width:100%;background:${d.total>0?'linear-gradient(0deg,var(--success),var(--success))':'var(--border)'};border-radius:3px 3px 0 0;height:${barH}%;transition:height 0.5s;"></div></div><div style="font-size:9px;color:var(--text-soft);margin-top:2px;transform:rotate(-45deg);white-space:nowrap;">${new Date(d.date).getDate()}日</div></div>`;
-      }).join('')}
-    </div>` : '<div class="empty-state" style="padding:16px;"><div class="icon">📊</div><p>本月暂无数据</p></div>'}
+    ${doneList.length > 0 ? `
+    <div style="background:var(--bg-soft);border-radius:12px;padding:12px;margin-top:4px;">
+      <div style="font-weight:600;font-size:14px;color:var(--text-main);margin-bottom:8px;">✅ 本月已完成工作总结</div>
+      ${doneList.map(t => `
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px dashed var(--border);font-size:13px;">
+          <span style="color:var(--success);font-weight:600;">✓</span>
+          <div style="flex:1;">
+            <div>${escapeHtml(t.text)}</div>
+            <div style="font-size:11px;color:var(--text-soft);margin-top:2px;">${formatDateChinese(t.date)}${t.doneAt ? ' · 完成于 ' + formatTime(t.doneAt) : ''}${t.note ? ' · ' + escapeHtml(t.note) : ''}</div>
+          </div>
+          <span class="task-priority priority-${t.priority}" style="font-size:10px;flex-shrink:0;">${t.priority==='high'?'高':t.priority==='mid'?'中':'低'}</span>
+        </div>`).join('')}
+    </div>` : '<div class="empty-state" style="padding:16px;"><div class="icon">📋</div><p>本月暂无已完成的工作总结</p></div>'}
   `;
 }
 
