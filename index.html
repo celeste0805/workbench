@@ -1494,8 +1494,8 @@ function renderBirthdayReminder() {
     return;
   }
 
-  // 取最近3个
-  const top = dates.slice(0, 3);
+  // 只取最近1个
+  const top = dates.slice(0, 1);
   container.innerHTML = top.map(d => {
     const isToday = d.diffDays === 0;
     const isUrgent = d.diffDays <= 7;
