@@ -971,44 +971,20 @@ body {
 
   <!-- ========== 备考追踪 ========== -->
   <div class="view" id="view-study">
-    <div class="dashboard-grid">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title"><span class="icon">📖</span>经济基础</div>
-          <span class="tag status-progress" id="sub1Tag">进行中</span>
-        </div>
-        <div class="progress-label"><span>学习进度</span><span id="sub1Percent">30%</span></div>
-        <div class="progress-container"><div class="progress-bar" id="sub1Bar" style="width:30%"></div></div>
-        <div style="font-size:12px; color:var(--text-soft); margin-top:6px;">
-          <div>📊 已有备考资料 ✓</div>
-          <div id="sub1Info">已学 30%，继续加油！</div>
-        </div>
-        <div class="input-row">
-          <label>更新进度</label>
-          <input type="number" class="input" id="sub1Input" min="0" max="100" value="30" style="width:70px">
-          <span style="color:var(--text-soft);font-size:13px;">%</span>
-          <button class="btn btn-primary btn-sm" onclick="updateStudyProgress(1)">保存</button>
-        </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📅</span>考试倒计时</div>
+        <button class="btn btn-primary btn-sm" onclick="openExamModal()">设置考试</button>
       </div>
+      <div id="studyExams"></div>
+    </div>
 
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title"><span class="icon">🏗️</span>建筑与房地产</div>
-          <span class="tag status-pending" id="sub2Tag">待开始</span>
-        </div>
-        <div class="progress-label"><span>学习进度</span><span id="sub2Percent">0%</span></div>
-        <div class="progress-container"><div class="progress-bar" id="sub2Bar" style="width:0%"></div></div>
-        <div style="font-size:12px; color:var(--text-soft); margin-top:6px;">
-          <div>📚 暂无资料，待购入</div>
-          <div id="sub2Info">进度 0%，尽快开始！</div>
-        </div>
-        <div class="input-row">
-          <label>更新进度</label>
-          <input type="number" class="input" id="sub2Input" min="0" max="100" value="0" style="width:70px">
-          <span style="color:var(--text-soft);font-size:13px;">%</span>
-          <button class="btn btn-primary btn-sm" onclick="updateStudyProgress(2)">保存</button>
-        </div>
+    <div class="card" id="studySubjectsCard" style="display:none;">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📚</span>科目进度</div>
+        <button class="btn btn-primary btn-sm" onclick="openSubjectModal()">+ 添加科目</button>
       </div>
+      <div id="studySubjects"></div>
     </div>
 
     <div class="card">
@@ -1281,6 +1257,26 @@ let appData = DB.load();
 // 兼容老数据：补上新字段
 if (!appData.materials) appData.materials = [];
 if (!appData.recipeCosts) appData.recipeCosts = [];
+// 迁移老备考数据到新结构
+if (!appData.exams) {
+  appData.exams = [];
+  // 如果有老的 studyProgress 数据，自动创建对应的考试和科目
+  if (appData.studyProgress && (appData.studyProgress.sub1 > 0 || appData.studyProgress.sub2 > 0 || appData.studyLogs?.length > 0)) {
+    const examId = 'e' + Date.now();
+    appData.exams = [{
+      id: examId,
+      name: '经济师考试',
+      date: appData.examDate || '2026-11-01',
+      subjects: [
+        { id: 's1', name: '经济基础', totalChapters: 30, learnedChapters: Math.round((appData.studyProgress?.sub1||0) / 100 * 30), emoji: '📖' },
+        { id: 's2', name: '建筑与房地产', totalChapters: 25, learnedChapters: Math.round((appData.studyProgress?.sub2||0) / 100 * 25), emoji: '🏗️' },
+      ]
+    }];
+  }
+}
+if (!appData.currentExamId && appData.exams?.length > 0) {
+  appData.currentExamId = appData.exams[0].id;
+}
 let currentWorkDate = formatDate(new Date());
 
 // ========================================
@@ -1369,7 +1365,8 @@ function renderDashboard() {
   const q = getDailyQuote();
   document.getElementById('dailyQuote').innerHTML = `<div class="quote-emoji">${q.emoji}</div><div><div class="quote-text">"${q.text}"</div>${q.author ? `<div class="quote-author">— ${q.author}</div>` : ''}</div>`;
 
-  const examDate = new Date(appData.examDate);
+  const exam = getCurrentExam();
+  const examDate = exam ? new Date(exam.date) : new Date(appData.examDate);
   const today = new Date(); today.setHours(0,0,0,0);
   const days = Math.ceil((examDate - today) / (1000*60*60*24));
   document.getElementById('examCountdown').textContent = days > 0 ? days : 0;
@@ -1395,6 +1392,7 @@ function renderDashboard() {
   }
 
   const todayLog = appData.studyLogs.filter(l => l.date === todayStr);
+  const exam = getCurrentExam();
   const dashStudy = document.getElementById('dashStudyTasks');
   if (todayLog.length > 0) {
     dashStudy.innerHTML = todayLog.map(l => `
@@ -1404,7 +1402,8 @@ function renderDashboard() {
       </div>
     `).join('');
   } else {
-    dashStudy.innerHTML = `<div style="font-size:13px;color:var(--text-soft);margin-bottom:6px;">今日尚未学习记录</div><div style="font-size:12px;">📖 经济基础: ${appData.studyProgress.sub1}%<br>🏗️ 建筑与房地产: ${appData.studyProgress.sub2}%</div>`;
+    dashStudy.innerHTML = `<div style="font-size:13px;color:var(--text-soft);margin-bottom:6px;">今日尚未学习记录</div>
+      ${(exam?.subjects||[]).map(s => `<div style="font-size:12px;">${s.emoji||'📖'} ${escapeHtml(s.name)}: ${s.learnedChapters}/${s.totalChapters} 章 (${Math.round(s.learnedChapters/s.totalChapters*100)}%)</div>`).join('') || '<div style="font-size:12px;">暂无科目</div>'}`;
   }
 
   const pendingOrders = appData.orders.filter(o => o.status === 'pending' || o.status === 'progress');
@@ -1770,30 +1769,190 @@ function renderWorkMonthSummary() {
 // 备考追踪
 // ========================================
 function renderStudy() {
-  document.getElementById('sub1Percent').textContent = appData.studyProgress.sub1 + '%';
-  document.getElementById('sub1Bar').style.width = appData.studyProgress.sub1 + '%';
-  document.getElementById('sub1Input').value = appData.studyProgress.sub1;
-  document.getElementById('sub1Info').textContent = `已学 ${appData.studyProgress.sub1}%`;
-
-  document.getElementById('sub2Percent').textContent = appData.studyProgress.sub2 + '%';
-  document.getElementById('sub2Bar').style.width = appData.studyProgress.sub2 + '%';
-  document.getElementById('sub2Input').value = appData.studyProgress.sub2;
-  document.getElementById('sub2Info').textContent = `进度 ${appData.studyProgress.sub2}%`;
-
-  document.getElementById('sub1Tag').className = 'tag ' + (appData.studyProgress.sub1 >= 100 ? 'status-done' : 'status-progress');
-  document.getElementById('sub2Tag').className = 'tag ' + (appData.studyProgress.sub2 === 0 ? 'status-pending' : appData.studyProgress.sub2 >= 100 ? 'status-done' : 'status-progress');
-
+  renderStudyExams();
+  renderStudySubjects();
   renderStudyLogs();
   renderMilestones();
 }
 
-function updateStudyProgress(sub) {
-  const val = parseInt(document.getElementById(`sub${sub}Input`).value);
-  if (isNaN(val) || val < 0 || val > 100) { showToast('请输入0-100的数字'); return; }
-  appData.studyProgress[`sub${sub}`] = val;
+function renderStudyExams() {
+  const container = document.getElementById('studyExams');
+  const exams = appData.exams || [];
+  if (exams.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>还没有设置考试，点击"设置考试"开始</p></div>';
+    return;
+  }
+
+  container.innerHTML = exams.map(e => {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const examDate = new Date(e.date);
+    const days = Math.ceil((examDate - today) / (1000*60*60*24));
+    const isActive = appData.currentExamId === e.id;
+    const totalChapters = (e.subjects||[]).reduce((s, sub) => s + sub.totalChapters, 0);
+    const learnedChapters = (e.subjects||[]).reduce((s, sub) => s + sub.learnedChapters, 0);
+    const overallPct = totalChapters > 0 ? Math.round(learnedChapters / totalChapters * 100) : 0;
+
+    return `
+    <div class="exam-card" style="border:${isActive?'2px solid var(--primary)':'2px solid var(--border)'};border-radius:14px;padding:14px;margin-bottom:10px;background:${isActive?'var(--bg-soft)':'var(--bg-card)'};cursor:pointer;" onclick="selectExam('${e.id}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div>
+          <div style="font-weight:700;font-size:15px;">${escapeHtml(e.name)}</div>
+          <div style="font-size:12px;color:${days<0?'var(--danger)':days<=30?'var(--warning)':'var(--text-soft)'};">📅 ${formatDateChinese(e.date)} · ${days>0?`还有${days}天`:days===0?'今天考试！':`已过${Math.abs(days)}天`}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:20px;font-weight:700;color:var(--primary);">${overallPct}%</div>
+          <div style="font-size:11px;color:var(--text-soft);">${learnedChapters}/${totalChapters} 章</div>
+        </div>
+      </div>
+      <div class="progress-container"><div class="progress-bar" style="width:${overallPct}%"></div></div>
+      <div style="margin-top:6px;display:flex;gap:4px;justify-content:flex-end;">
+        <button class="btn btn-soft btn-sm" onclick="event.stopPropagation();openExamModal('${e.id}')">编辑</button>
+        <button class="btn-icon-sm" onclick="event.stopPropagation();deleteExam('${e.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectExam(id) {
+  appData.currentExamId = id;
   save();
   renderStudy();
-  showToast('进度已更新 ✓');
+}
+
+function getCurrentExam() {
+  return (appData.exams||[]).find(e => e.id === appData.currentExamId) || (appData.exams||[])[0] || null;
+}
+
+function renderStudySubjects() {
+  const card = document.getElementById('studySubjectsCard');
+  const container = document.getElementById('studySubjects');
+  const exam = getCurrentExam();
+  if (!exam || !exam.subjects || exam.subjects.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+  container.innerHTML = exam.subjects.map(sub => {
+    const pct = sub.totalChapters > 0 ? Math.round(sub.learnedChapters / sub.totalChapters * 100) : 0;
+    const remaining = sub.totalChapters - sub.learnedChapters;
+    return `
+    <div class="card" style="margin-bottom:10px;">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">${sub.emoji||'📖'}</span>${escapeHtml(sub.name)}</div>
+        <span class="tag ${pct>=100?'status-done':pct>0?'status-progress':'status-pending'}">${pct>=100?'已完成':pct>0?'进行中':'待开始'}</span>
+      </div>
+      <div class="progress-label"><span>章节进度</span><span>${sub.learnedChapters} / ${sub.totalChapters} 章 (${pct}%)</span></div>
+      <div class="progress-container"><div class="progress-bar" style="width:${pct}%"></div></div>
+      <div style="font-size:12px;color:var(--text-soft);margin-top:6px;">剩余 ${remaining} 章${remaining>0?'，继续加油！':'，恭喜完成！'}</div>
+      <div class="input-row">
+        <label>已学章节</label>
+        <input type="number" class="input subject-input" data-subid="${sub.id}" min="0" max="${sub.totalChapters}" value="${sub.learnedChapters}" style="width:80px;">
+        <span style="color:var(--text-soft);font-size:13px;">/ ${sub.totalChapters} 章</span>
+        <button class="btn btn-primary btn-sm" onclick="updateSubjectProgress('${sub.id}')">保存</button>
+      </div>
+      <div class="input-row">
+        <button class="btn btn-soft btn-sm" onclick="openSubjectModal('${sub.id}')">编辑科目</button>
+        <button class="btn-icon-sm" onclick="deleteSubject('${sub.id}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateSubjectProgress(subId) {
+  const input = document.querySelector(`.subject-input[data-subid="${subId}"]`);
+  if (!input) return;
+  const val = parseInt(input.value);
+  if (isNaN(val) || val < 0) { showToast('请输入有效数字'); return; }
+  const exam = getCurrentExam();
+  if (!exam) return;
+  const sub = exam.subjects.find(s => s.id === subId);
+  if (!sub) return;
+  if (val > sub.totalChapters) { showToast(`最多 ${sub.totalChapters} 章`); return; }
+  sub.learnedChapters = val;
+  save();
+  renderStudy();
+  showToast(`${sub.name} 进度已更新 ✓`);
+}
+
+function openExamModal(id) {
+  const e = id ? (appData.exams||[]).find(x => x.id === id) : {};
+  showModal(`
+    <div class="modal-title">📅 ${id?'编辑':'新增'}考试 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-group"><label>考试名称</label><input type="text" class="input" id="examName" value="${escapeHtml(e.name||'')}" placeholder="如：经济师考试"></div>
+    <div class="form-group"><label>考试日期</label><input type="date" class="input" id="examDate" value="${e.date||''}"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveExam('${id||''}')">保存</button>
+  `);
+}
+
+function saveExam(id) {
+  const name = document.getElementById('examName').value.trim();
+  const date = document.getElementById('examDate').value;
+  if (!name) { showToast('请输入考试名称'); return; }
+  if (!appData.exams) appData.exams = [];
+  if (id) {
+    const idx = appData.exams.findIndex(x => x.id === id);
+    appData.exams[idx].name = name;
+    appData.exams[idx].date = date;
+  } else {
+    const newExam = { id: 'e' + Date.now(), name, date, subjects: [] };
+    appData.exams.push(newExam);
+    appData.currentExamId = newExam.id;
+  }
+  save(); closeModal(); renderStudy();
+  showToast('考试已保存 ✓');
+}
+
+function deleteExam(id) {
+  if (!confirm('确定删除这个考试及所有科目吗？')) return;
+  appData.exams = (appData.exams||[]).filter(e => e.id !== id);
+  if (appData.currentExamId === id) appData.currentExamId = (appData.exams[0]||{}).id || null;
+  save(); renderStudy();
+  showToast('已删除');
+}
+
+const SUBJECT_EMOJIS = ['📖','🏗️','📐','📊','📝','📚','📑','📋','🔢','💼','🏛️','🌍','🧮','⚖️'];
+
+function openSubjectModal(id) {
+  const exam = getCurrentExam();
+  if (!exam) { showToast('请先设置考试'); return; }
+  if (!exam.subjects) exam.subjects = [];
+  const sub = id ? exam.subjects.find(s => s.id === id) : {};
+  const emojiOptions = SUBJECT_EMOJIS.map(em => `<option value="${em}" ${(sub.emoji||'')===em?'selected':''}>${em}</option>`).join('');
+  showModal(`
+    <div class="modal-title">📚 ${id?'编辑':'新增'}科目 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-group"><label>科目名称</label><input type="text" class="input" id="subName" value="${escapeHtml(sub.name||'')}" placeholder="如：经济基础"></div>
+    <div class="form-row">
+      <div class="form-group"><label>图标</label><select class="select" id="subEmoji">${emojiOptions}</select></div>
+      <div class="form-group"><label>总章节数</label><input type="number" class="input" id="subTotal" value="${sub.totalChapters||''}" min="1" placeholder="如 30"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="saveSubject('${id||''}')">保存科目</button>
+  `);
+}
+
+function saveSubject(id) {
+  const exam = getCurrentExam();
+  if (!exam || !exam.subjects) return;
+  const name = document.getElementById('subName').value.trim();
+  const total = parseInt(document.getElementById('subTotal').value) || 0;
+  if (!name) { showToast('请输入科目名称'); return; }
+  if (total <= 0) { showToast('请输入有效章节数'); return; }
+  if (id) {
+    const sub = exam.subjects.find(s => s.id === id);
+    if (sub) { sub.name = name; sub.totalChapters = total; sub.emoji = document.getElementById('subEmoji').value; }
+  } else {
+    exam.subjects.push({ id: 's' + Date.now(), name, totalChapters: total, learnedChapters: 0, emoji: document.getElementById('subEmoji').value });
+  }
+  save(); closeModal(); renderStudy();
+  showToast('科目已保存 ✓');
+}
+
+function deleteSubject(subId) {
+  if (!confirm('确定删除这个科目吗？')) return;
+  const exam = getCurrentExam();
+  if (!exam) return;
+  exam.subjects = exam.subjects.filter(s => s.id !== subId);
+  save(); renderStudy();
+  showToast('已删除');
 }
 
 function renderStudyLogs() {
@@ -1803,21 +1962,27 @@ function renderStudyLogs() {
     return;
   }
   const sorted = [...appData.studyLogs].sort((a,b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
-  container.innerHTML = sorted.slice(0, 20).map(l => `
+  container.innerHTML = sorted.slice(0, 20).map(l => {
+    const exam = getCurrentExam();
+    const sub = exam?.subjects?.find(s => s.id === l.subject);
+    const subjectName = sub ? `${sub.emoji||'📖'} ${sub.name}` : (l.subject === 'sub1' ? '📖 经济基础' : l.subject === 'sub2' ? '🏗️ 建筑与房地产' : '📖 ' + l.subject);
+    return `
     <div class="reminder-item">
       <div class="reminder-date"><div class="reminder-day">${new Date(l.date).getDate()}</div><div class="reminder-month">${new Date(l.date).getMonth()+1}月</div></div>
-      <div class="reminder-info"><div class="reminder-title">${l.subject === 'sub1' ? '📖 经济基础' : '🏗️ 建筑与房地产'} - ${escapeHtml(l.content)}</div><div class="reminder-desc">⏱ ${l.duration}分钟${l.note ? ' | ' + escapeHtml(l.note) : ''}</div></div>
+      <div class="reminder-info"><div class="reminder-title">${subjectName} - ${escapeHtml(l.content)}</div><div class="reminder-desc">⏱ ${l.duration}分钟${l.note ? ' | ' + escapeHtml(l.note) : ''}</div></div>
       <button class="task-delete" onclick="deleteStudyLog('${l.id}')">✕</button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function openStudyLogModal() {
   const today = formatDate(new Date());
+  const exam = getCurrentExam();
+  const subjectOptions = exam && exam.subjects ? exam.subjects.map(s => `<option value="${s.id}">${s.emoji||'📖'} ${escapeHtml(s.name)}</option>`).join('') : '';
   showModal(`
     <div class="modal-title">✏️ 添加学习记录 <button class="modal-close" onclick="closeModal()">✕</button></div>
     <div class="form-group"><label>日期</label><input type="date" class="input" id="logDate" value="${today}"></div>
-    <div class="form-group"><label>科目</label><select class="select" id="logSubject"><option value="sub1">📖 经济基础</option><option value="sub2">🏗️ 建筑与房地产</option></select></div>
+    <div class="form-group"><label>科目</label><select class="select" id="logSubject">${subjectOptions || '<option value="">请先添加科目</option>'}</select></div>
     <div class="form-group"><label>学习时长(分钟)</label><input type="number" class="input" id="logDuration" value="60" min="1"></div>
     <div class="form-group"><label>学习内容</label><input type="text" class="input" id="logContent" placeholder="如：第一章 经济学基础"></div>
     <div class="form-group"><label>笔记(可选)</label><textarea class="textarea" id="logNote" placeholder="重点记录..."></textarea></div>
@@ -2627,8 +2792,11 @@ function generateWeeklyReport() {
 
   const weekLogs = appData.studyLogs.filter(l => new Date(l.date) >= weekAgo);
   const studyMin = weekLogs.reduce((sum, l) => sum + l.duration, 0);
-  const sub1Logs = weekLogs.filter(l => l.subject === 'sub1');
-  const sub2Logs = weekLogs.filter(l => l.subject === 'sub2');
+  const exam = getCurrentExam();
+  const subjectStats = (exam?.subjects||[]).map(s => {
+    const logs = weekLogs.filter(l => l.subject === s.id);
+    return { ...s, logs, logCount: logs.length };
+  });
 
   const weekOrders = appData.orders.filter(o => { const d = new Date(o.deliveryDate); return d >= weekAgo && d <= today; });
   const weekContents = appData.contents.filter(c => { const d = new Date(c.date); return d >= weekAgo && d <= today; });
@@ -2648,9 +2816,9 @@ function generateWeeklyReport() {
       <h3>📋 本周总结 (${formatDate(weekAgo)} ~ ${formatDate(today)})</h3>
       <div class="section-title">💼 工作</div><ul><li>本周共 ${workTotal} 项任务，已完成 ${workDone} 项，完成率 ${workRate}%</li><li>${workRate >= 80 ? '👍 完成率很高，保持！' : workRate >= 50 ? '💪 还需努力，继续加油' : '⚠️ 完成率偏低，注意调整节奏'}</li></ul>
       <div class="section-title">💳 收支</div><ul><li>本周收入 ¥${weekIncome.toFixed(0)} | 支出 ¥${weekExpense.toFixed(0)} | 存款 ¥${weekSave.toFixed(0)}</li><li>本周结余 ¥${(weekIncome - weekExpense).toFixed(0)} | 累计存款 ¥${totalSave.toFixed(0)}</li><li>${weekIncome - weekExpense >= 0 ? '👍 本周有结余，继续保持' : '⚠️ 本周支出大于收入，注意控制消费'}</li></ul>
-      <div class="section-title">📚 备考</div><ul><li>本周学习总时长：${Math.round(studyMin/60*10)/10} 小时（${studyMin}分钟）</li><li>📖 经济基础：${sub1Logs.length} 次记录，当前进度 ${appData.studyProgress.sub1}%</li><li>🏗️ 建筑与房地产：${sub2Logs.length} 次记录，当前进度 ${appData.studyProgress.sub2}%</li><li>${studyMin >= 420 ? '👍 每天平均1小时以上，很好！' : studyMin > 0 ? '⚠️ 学习时长不足，建议每天至少1小时' : '⚠️ 本周尚未记录学习，尽快开始！'}</li></ul>
+      <div class="section-title">📚 备考</div><ul><li>本周学习总时长：${Math.round(studyMin/60*10)/10} 小时（${studyMin}分钟）</li>${subjectStats.map(s => `<li>${s.emoji||'📖'} ${escapeHtml(s.name)}：${s.logCount} 次记录，进度 ${s.learnedChapters}/${s.totalChapters} 章 (${Math.round(s.learnedChapters/s.totalChapters*100)}%)</li>`).join('')}<li>${studyMin >= 420 ? '👍 每天平均1小时以上，很好！' : studyMin > 0 ? '⚠️ 学习时长不足，建议每天至少1小时' : '⚠️ 本周尚未记录学习，尽快开始！'}</li></ul>
       <div class="section-title">🧁 烘焙</div><ul><li>本周处理订单 ${weekOrders.length} 单</li><li>本周发布内容 ${weekContents.filter(c=>c.status==='done').length} 篇</li><li>配方库共 ${appData.recipes.length} 个配方</li><li>材料库 ${appData.materials?.length||0} 种材料</li><li>成本核算 ${appData.recipeCosts?.length||0} 个配方</li></ul>
-      <div class="section-title">📌 下周重点</div><ul>${upcomingOrders.length > 0 ? `<li>📦 待交付订单 ${upcomingOrders.length} 单：${upcomingOrders.slice(0,3).map(o=>o.customer+'-'+o.product).join('、')}</li>` : ''}${upcomingContents.length > 0 ? `<li>📱 待发布内容 ${upcomingContents.length} 条</li>` : ''}<li>📚 经济基础目标进度：${Math.min(appData.studyProgress.sub1 + 10, 100)}%（+10%）</li><li>📚 建筑与房地产建议尽快开始第一轮学习</li><li>💳 继续记账，关注收支平衡</li>${upcomingOrders.length === 0 && upcomingContents.length === 0 ? '<li>暂无紧急待办，可以专注备考</li>' : ''}</ul>
+      <div class="section-title">📌 下周重点</div><ul>${upcomingOrders.length > 0 ? `<li>📦 待交付订单 ${upcomingOrders.length} 单：${upcomingOrders.slice(0,3).map(o=>o.customer+'-'+o.product).join('、')}</li>` : ''}${upcomingContents.length > 0 ? `<li>📱 待发布内容 ${upcomingContents.length} 条</li>` : ''}${subjectStats.map(s => `<li>📚 ${s.emoji||'📖'} ${escapeHtml(s.name)}：目标完成 ${Math.min(s.learnedChapters + 3, s.totalChapters)}/${s.totalChapters} 章</li>`).join('')}<li>💳 继续记账，关注收支平衡</li>${upcomingOrders.length === 0 && upcomingContents.length === 0 ? '<li>暂无紧急待办，可以专注备考</li>' : ''}</ul>
     </div>
   `;
   document.getElementById('weeklyReportArea').innerHTML = report;
