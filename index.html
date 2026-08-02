@@ -169,6 +169,19 @@ body {
 
 .btn-icon-sm:hover { background: var(--bg-soft); color: var(--primary); }
 
+/* ========== 计算器按钮 ========== */
+.calc-btn {
+  padding: 14px 0; font-size: 18px; font-weight: 600;
+  border: none; border-radius: 12px; background: var(--bg-soft);
+  color: var(--text-main); cursor: pointer; transition: var(--transition);
+  -webkit-tap-highlight-color: transparent;
+}
+.calc-btn:active { transform: scale(0.92); background: var(--primary-light); }
+.calc-btn.calc-op { background: var(--primary); color: white; }
+.calc-btn.calc-op:active { background: var(--primary-dark); }
+.calc-btn.calc-fn { background: var(--bg-card); color: var(--text-soft); border: 1px solid var(--border); }
+.calc-btn.calc-fn:active { background: var(--bg-soft); }
+
 /* ========== 主内容区 ========== */
 .main-content {
   flex: 1;
@@ -1186,7 +1199,7 @@ body {
           </select>
         </div>
         <div class="form-group" style="flex:2; min-width:120px;"><label>分类</label><select class="select" id="billCategory"></select></div>
-        <div class="form-group" style="flex:2; min-width:90px;"><label>金额(元)</label><input type="number" class="input" id="billAmount" placeholder="0.00" step="0.01"></div>
+        <div class="form-group" style="flex:2; min-width:90px;"><label>金额(元)</label><div style="display:flex;gap:4px;"><input type="number" class="input" id="billAmount" placeholder="0.00" step="0.01" style="flex:1;"><button class="btn btn-soft" onclick="openBillCalculator()" style="padding:0 10px;white-space:nowrap;">🧮</button></div></div>
         <div class="form-group" style="flex:3; min-width:120px;"><label>备注</label><input type="text" class="input" id="billNote" placeholder="如：工资、午餐外卖"></div>
         <div class="form-group" style="flex:0 0 auto; min-width:0;"><button class="btn btn-primary" onclick="addBill()">记录</button></div>
       </div>
@@ -3233,7 +3246,7 @@ function getSpecialDateReminders() {
 // ========================================
 // 账单管理
 // ========================================
-const EXPENSE_CATS = ['餐饮','交通','购物','宠物','住房','娱乐','医疗','教育','人情','烘焙原料','烘焙设备','备考资料','其他'];
+const EXPENSE_CATS = ['餐饮','交通','购物','衣物服饰','宠物','住房','娱乐','医疗','教育','人情','烘焙原料','烘焙设备','备考资料','其他'];
 const INCOME_CATS = ['工资','副业','私房收入','理财收益','红包','其他'];
 function getCategoryOptions(type) {
   const cats = type === 'income' ? INCOME_CATS : type === 'save' ? ['定期存款','活期存款','理财转入','其他'] : EXPENSE_CATS;
@@ -3306,6 +3319,92 @@ function openSaveGoalModal() {
 }
 
 function saveSaveGoal() { const val = parseFloat(document.getElementById('sgTarget').value); if (!val || val <= 0) { showToast('请输入有效金额'); return; } appData.saveGoal.target = val; save(); closeModal(); renderBills(); showToast('存款目标已设定 ✓'); }
+
+function openBillCalculator() {
+  showModal(`
+    <div class="modal-title">🧮 计算器 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div style="text-align:right;font-size:14px;color:var(--text-soft);margin-bottom:4px;min-height:18px;" id="calcExpr"></div>
+    <div style="text-align:right;font-size:32px;font-weight:700;margin-bottom:12px;min-height:40px;" id="calcDisplay">0</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+      <button class="calc-btn calc-fn" onclick="calcInput('C')">C</button>
+      <button class="calc-btn calc-fn" onclick="calcInput('back')">⌫</button>
+      <button class="calc-btn calc-fn" onclick="calcInput('%')">%</button>
+      <button class="calc-btn calc-op" onclick="calcInput('/')">÷</button>
+      <button class="calc-btn" onclick="calcInput('7')">7</button>
+      <button class="calc-btn" onclick="calcInput('8')">8</button>
+      <button class="calc-btn" onclick="calcInput('9')">9</button>
+      <button class="calc-btn calc-op" onclick="calcInput('*')">×</button>
+      <button class="calc-btn" onclick="calcInput('4')">4</button>
+      <button class="calc-btn" onclick="calcInput('5')">5</button>
+      <button class="calc-btn" onclick="calcInput('6')">6</button>
+      <button class="calc-btn calc-op" onclick="calcInput('-')">−</button>
+      <button class="calc-btn" onclick="calcInput('1')">1</button>
+      <button class="calc-btn" onclick="calcInput('2')">2</button>
+      <button class="calc-btn" onclick="calcInput('3')">3</button>
+      <button class="calc-btn calc-op" onclick="calcInput('+')">+</button>
+      <button class="calc-btn" onclick="calcInput('0')" style="grid-column:span 2;">0</button>
+      <button class="calc-btn" onclick="calcInput('.')">.</button>
+      <button class="calc-btn calc-op" onclick="calcInput('=')">=</button>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="calcConfirm()">填入金额</button>
+  `);
+}
+
+let calcCurrent = '0';
+let calcExpression = '';
+
+function calcInput(val) {
+  const display = document.getElementById('calcDisplay');
+  const expr = document.getElementById('calcExpr');
+
+  if (val === 'C') {
+    calcCurrent = '0'; calcExpression = '';
+  } else if (val === 'back') {
+    calcCurrent = calcCurrent.length > 1 ? calcCurrent.slice(0, -1) : '0';
+  } else if (val === '=') {
+    try {
+      let exprToEval = calcExpression + calcCurrent;
+      exprToEval = exprToEval.replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
+      // 安全计算：只允许数字和运算符
+      if (!/^[\d+\-*/.()%\s]+$/.test(exprToEval)) throw 'invalid';
+      const result = Function('"use strict";return (' + exprToEval + ')')();
+      calcExpression = '';
+      calcCurrent = String(Math.round(result * 100) / 100);
+    } catch(e) { calcCurrent = '错误'; calcExpression = ''; }
+  } else if (['+','-','*','/','%'].includes(val)) {
+    if (calcExpression === '' && calcCurrent !== '错误') {
+      calcExpression = calcCurrent + val;
+    } else {
+      calcExpression += calcCurrent + val;
+    }
+    calcCurrent = '0';
+  } else {
+    if (val === '.' && calcCurrent.includes('.')) return;
+    if (calcCurrent === '0' || calcCurrent === '错误') {
+      calcCurrent = val === '.' ? '0.' : val;
+    } else {
+      calcCurrent += val;
+    }
+  }
+
+  display.textContent = calcCurrent;
+  // 显示表达式
+  const exprDisplay = calcExpression.replace(/\*/g,'×').replace(/\//g,'÷').replace(/-/g,'−');
+  expr.textContent = exprDisplay || '';
+}
+
+function calcConfirm() {
+  let val = calcCurrent;
+  if (val === '错误' || val === '') val = '0';
+  // 如果还有未计算的表达式，先计算
+  if (calcExpression) {
+    calcInput('=');
+    val = calcCurrent;
+    if (val === '错误') { showToast('计算结果有误'); return; }
+  }
+  document.getElementById('billAmount').value = val;
+  closeModal();
+}
 
 function addBill() {
   const bill = { id: uid(), date: document.getElementById('billDate').value, type: document.getElementById('billType').value, category: document.getElementById('billCategory').value, amount: parseFloat(document.getElementById('billAmount').value) || 0, note: document.getElementById('billNote').value.trim() };
