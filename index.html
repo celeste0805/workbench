@@ -1225,6 +1225,21 @@ body {
 
     <div class="card">
       <div class="card-header">
+        <div class="card-title"><span class="icon">📊</span>天数汇总</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-soft btn-sm" onclick="setDayRange(7)">7天</button>
+          <button class="btn btn-soft btn-sm" onclick="setDayRange(15)">15天</button>
+          <button class="btn btn-soft btn-sm" onclick="setDayRange(30)">30天</button>
+          <input type="date" class="input" id="rangeStart" style="width:130px;font-size:12px;" onchange="renderDaySummary()">
+          <span style="align-self:center;">至</span>
+          <input type="date" class="input" id="rangeEnd" style="width:130px;font-size:12px;" onchange="renderDaySummary()">
+        </div>
+      </div>
+      <div id="daySummaryContent"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
         <div class="card-title"><span class="icon">📋</span>账单明细</div>
         <select class="select" id="billMonthFilter" style="width:auto; display:inline;" onchange="renderBills()"><option value="">全部月份</option></select>
       </div>
@@ -3264,7 +3279,7 @@ function renderBills() {
   const months = [...new Set(appData.bills.map(b => b.date.substring(0,7)))].sort().reverse();
   const filter = document.getElementById('billMonthFilter');
   filter.innerHTML = '<option value="">全部月份</option>' + months.map(m => `<option value="${m}">${m}</option>`).join('');
-  renderBillSummary(); renderExpenseChart(); renderIncomeChart(); renderSaveGoal(); renderBillTable();
+  renderBillSummary(); renderExpenseChart(); renderIncomeChart(); renderSaveGoal(); renderDaySummary(); renderBillTable();
 }
 
 function renderBillSummary() {
@@ -3280,6 +3295,68 @@ function renderBillSummary() {
     <div class="bill-summary-card"><div class="amount" style="color:${monthIncome-monthExpense>=0?'var(--success)':'var(--danger)'}">¥${(monthIncome-monthExpense).toFixed(0)}</div><div class="label">本月结余</div></div>
     <div class="bill-summary-card"><div class="amount amount-save">¥${monthSave.toFixed(0)}</div><div class="label">本月存款</div></div>
     <div class="bill-summary-card"><div class="amount" style="color:var(--primary-dark)">¥${totalSave.toFixed(0)}</div><div class="label">累计存款</div></div>
+  `;
+}
+
+let dayRangeDays = 7; // 默认7天
+
+function setDayRange(days) {
+  dayRangeDays = days;
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - days + 1);
+  document.getElementById('rangeStart').value = formatDate(start);
+  document.getElementById('rangeEnd').value = formatDate(end);
+  renderDaySummary();
+}
+
+function renderDaySummary() {
+  const container = document.getElementById('daySummaryContent');
+  const startVal = document.getElementById('rangeStart').value;
+  const endVal = document.getElementById('rangeEnd').value;
+
+  let startDate, endDate;
+  if (startVal && endVal) {
+    startDate = startVal;
+    endDate = endVal;
+    dayRangeDays = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000*60*60*24)) + 1;
+  } else {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(start.getDate() - dayRangeDays + 1);
+    startDate = formatDate(start);
+    endDate = formatDate(end);
+    document.getElementById('rangeStart').value = startDate;
+    document.getElementById('rangeEnd').value = endDate;
+  }
+
+  const rangeBills = appData.bills.filter(b => b.date >= startDate && b.date <= endDate);
+  const income = rangeBills.filter(b => b.type === 'income').reduce((s,b) => s + b.amount, 0);
+  const expense = rangeBills.filter(b => b.type === 'expense').reduce((s,b) => s + b.amount, 0);
+  const save = rangeBills.filter(b => b.type === 'save').reduce((s,b) => s + b.amount, 0);
+
+  // 按分类汇总支出
+  const catMap = {};
+  rangeBills.filter(b => b.type === 'expense').forEach(b => {
+    catMap[b.category] = (catMap[b.category] || 0) + b.amount;
+  });
+  const catEntries = Object.entries(catMap).sort((a,b) => b[1] - a[1]);
+
+  container.innerHTML = `
+    <div class="bill-summary">
+      <div class="bill-summary-card"><div class="amount amount-income">¥${income.toFixed(0)}</div><div class="label">${dayRangeDays}天收入</div></div>
+      <div class="bill-summary-card"><div class="amount amount-expense">¥${expense.toFixed(0)}</div><div class="label">${dayRangeDays}天支出</div></div>
+      <div class="bill-summary-card"><div class="amount" style="color:${income-expense>=0?'var(--success)':'var(--danger)'}">¥${(income-expense).toFixed(0)}</div><div class="label">${dayRangeDays}天结余</div></div>
+      <div class="bill-summary-card"><div class="amount amount-save">¥${save.toFixed(0)}</div><div class="label">${dayRangeDays}天存款</div></div>
+      <div class="bill-summary-card"><div class="amount" style="color:var(--primary-dark)">¥${(income+save-expense).toFixed(0)}</div><div class="label">净余额变化</div></div>
+    </div>
+    ${catEntries.length > 0 ? `
+    <div style="margin-top:10px;">
+      <div style="font-size:12px;color:var(--text-soft);margin-bottom:6px;">📊 ${dayRangeDays}天支出分类</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;">
+        ${catEntries.map(([cat, amt]) => `<span style="background:var(--bg-soft);padding:4px 10px;border-radius:20px;font-size:12px;">${cat} ¥${amt.toFixed(0)}</span>`).join('')}
+      </div>
+    </div>` : '<div style="margin-top:10px;font-size:12px;color:var(--text-soft);">该时段暂无支出记录</div>'}
   `;
 }
 
