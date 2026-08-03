@@ -1770,21 +1770,17 @@ function deleteWorkTask(id) {
 function renderWorkWeeklyStats() {
   const stats = document.getElementById('workWeeklyStats');
   const today = new Date();
-  const todayStr = formatDate(today);
-  // 按任务ID去重 - 只统计到最新日期的状态
-  // 如果一个任务在7天内多天出现（延续），只在它"最新"的那天算
-  const taskMap = {}; // task.id -> {date, done, task}
-  const days = [];
+  // 按任务内容+优先级去重（因为延续任务每次会生成新ID）
+  // 一个任务在7天内多天出现时，取它最新的状态
+  const taskMap = {}; // key(text|priority) -> {date, done, task}
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today); d.setDate(d.getDate() - i);
     const dateStr = formatDate(d);
     const tasks = appData.workTasks[dateStr] || [];
-    // 当天显示：包含当天原生任务 + 延续到当天的任务
-    // 但只显示"当天还在活跃"的任务（即如果任务在后续日期也出现，只在最后那天显示）
     tasks.forEach(t => {
-      // 更新这个任务的最新状态
-      if (!taskMap[t.id] || taskMap[t.id].date <= dateStr) {
-        taskMap[t.id] = { date: dateStr, done: t.done, task: t };
+      const key = (t.text || '') + '|' + (t.priority || 'mid');
+      if (!taskMap[key] || taskMap[key].date <= dateStr) {
+        taskMap[key] = { date: dateStr, done: t.done, task: t };
       }
     });
   }
@@ -1853,16 +1849,17 @@ function renderWorkMonthSummary() {
   let totalTasks = 0, doneTasks = 0, overdueTasks = 0;
   let dailyStats = [];
   let allTasks = [];
-  // 按任务ID去重 - 每个任务在月内只算一次（取该任务在月内最新的那条）
+  // 按任务内容+优先级去重 - 每个任务在月内只算一次（取该任务在月内最新的那条）
+  // 因为延续任务每次会生成新ID，所以不能用ID去重
   const taskMap = {};
 
   Object.keys(appData.workTasks).forEach(dateStr => {
     if (dateStr.startsWith(monthKey)) {
       const tasks = appData.workTasks[dateStr] || [];
       tasks.forEach(t => {
-        // 同一个任务ID，按日期取最新的
-        if (!taskMap[t.id] || taskMap[t.id].date < dateStr) {
-          taskMap[t.id] = { ...t, date: dateStr };
+        const key = (t.text || '') + '|' + (t.priority || 'mid');
+        if (!taskMap[key] || taskMap[key].date < dateStr) {
+          taskMap[key] = { ...t, date: dateStr };
         }
       });
       dailyStats.push({ date: dateStr, total: tasks.length, done: tasks.filter(t => t.done).length });
@@ -3615,8 +3612,9 @@ function renderStats() {
     const dateStr = formatDate(d);
     const tasks = appData.workTasks[dateStr] || [];
     tasks.forEach(t => {
-      if (!taskMap[t.id] || taskMap[t.id].date < dateStr) {
-        taskMap[t.id] = { ...t, date: dateStr };
+      const key = (t.text || '') + '|' + (t.priority || 'mid');
+      if (!taskMap[key] || taskMap[key].date < dateStr) {
+        taskMap[key] = { ...t, date: dateStr };
       }
     });
   }
@@ -3683,8 +3681,9 @@ function generateWeeklyReport() {
     const dateStr = formatDate(d);
     const tasks = appData.workTasks[dateStr] || [];
     tasks.forEach(t => {
-      if (!taskMap2[t.id] || taskMap2[t.id].date < dateStr) {
-        taskMap2[t.id] = { ...t, date: dateStr };
+      const key = (t.text || '') + '|' + (t.priority || 'mid');
+      if (!taskMap2[key] || taskMap2[key].date < dateStr) {
+        taskMap2[key] = { ...t, date: dateStr };
       }
     });
   }
