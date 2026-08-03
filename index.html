@@ -959,9 +959,13 @@ body {
           <label>新增任务</label>
           <input type="text" class="input" id="newWorkTask" placeholder="输入任务内容后回车..." onkeypress="if(event.key==='Enter')addWorkTask()">
         </div>
-        <div class="form-group" style="flex:1; min-width:80px;">
+        <div class="form-group" style="flex:1; min-width:120px;">
+          <label>截止日期</label>
+          <input type="date" class="input" id="newWorkDeadlineDate" style="min-width:100px;">
+        </div>
+        <div class="form-group" style="flex:1; min-width:70px;">
           <label>截止时间</label>
-          <input type="time" class="input" id="newWorkDeadline" style="min-width:80px;">
+          <input type="time" class="input" id="newWorkDeadline" style="min-width:70px;">
         </div>
         <div class="form-group" style="flex:1; min-width:70px;">
           <label>优先级</label>
@@ -1493,7 +1497,7 @@ function renderDashboard() {
       const carriedTag = t.carriedFrom ? `<span style="font-size:10px;color:var(--warning);background:#FFF3E0;padding:1px 5px;border-radius:4px;margin-left:4px;">⏩</span>` : '';
       const noteIcon = t.note && t.note.trim() ? ' 📝' : '';
       const doneTime = t.done && t.doneAt ? `<span style="font-size:10px;color:var(--success);margin-left:4px;">✅ ${formatTime(t.doneAt)}</span>` : '';
-      const deadlineTag = t.deadline ? `<span style="font-size:10px;color:${t.done?'var(--text-light)':'var(--accent)'};margin-left:4px;">⏰ ${t.deadline}</span>` : '';
+      const deadlineTag = (t.deadlineDate || t.deadline) ? `<span style="font-size:10px;color:${t.done?'var(--text-light)':'var(--accent)'};margin-left:4px;">⏰${t.deadlineDate?formatDateShort(t.deadlineDate)+' ':''}${t.deadline||''}</span>` : '';
       return `
       <div class="task-item">
         <div class="task-checkbox ${t.done?'checked':''}" onclick="toggleWorkTask('${t.id}')"></div>
@@ -1633,7 +1637,7 @@ function renderWorkTasks() {
       const hasNote = t.note && t.note.trim();
       const carriedTag = t.carriedFrom ? `<span style="font-size:10px;color:var(--warning);background:#FFF3E0;padding:1px 6px;border-radius:4px;margin-left:4px;">⏩ 延续自${formatDateShort(t.carriedFrom)}</span>` : '';
       const doneTime = t.done && t.doneAt ? `<span style="font-size:10px;color:var(--success);margin-left:4px;">✅ ${formatTime(t.doneAt)}</span>` : '';
-      const deadlineTag = t.deadline ? `<span style="font-size:10px;color:${t.done?'var(--text-light)':'var(--accent)'};background:${t.done?'var(--bg-soft)':'#FFF0E5'};padding:1px 6px;border-radius:4px;margin-left:4px;">⏰ ${t.deadline}</span>` : '';
+      const deadlineTag = (t.deadlineDate || t.deadline) ? `<span style="font-size:10px;color:${t.done?'var(--text-light)':'var(--accent)'};background:${t.done?'var(--bg-soft)':'#FFF0E5'};padding:1px 6px;border-radius:4px;margin-left:4px;">⏰ ${t.deadlineDate?formatDateShort(t.deadlineDate)+' ':''}${t.deadline||''}</span>` : '';
       return `
       <div class="task-item" style="flex-wrap:wrap;">
         <div class="task-checkbox ${t.done?'checked':''}" onclick="toggleWorkTask('${t.id}')"></div>
@@ -1726,15 +1730,18 @@ function carryOverUndoneTasks() {
 function addWorkTask() {
   const input = document.getElementById('newWorkTask');
   const priority = document.getElementById('newWorkPriority').value;
+  const deadlineDate = document.getElementById('newWorkDeadlineDate').value;
   const deadline = document.getElementById('newWorkDeadline').value;
   const text = input.value.trim();
   if (!text) return;
   if (!appData.workTasks[currentWorkDate]) appData.workTasks[currentWorkDate] = [];
   const task = { id: uid(), text, priority, done: false };
+  if (deadlineDate) task.deadlineDate = deadlineDate;
   if (deadline) task.deadline = deadline;
   appData.workTasks[currentWorkDate].push(task);
   save();
   input.value = '';
+  document.getElementById('newWorkDeadlineDate').value = '';
   document.getElementById('newWorkDeadline').value = '';
   renderWorkTasks();
   showToast('任务已添加 ✓');
@@ -1847,12 +1854,21 @@ function renderWorkMonthSummary() {
   totalTasks = allTasks.length;
   doneTasks = allTasks.filter(t => t.done).length;
 
-  // 超期：有截止时间且未完成的任务（按任务最新出现日期计算）
+  // 超期：有截止日期/时间且未完成的任务
   allTasks.forEach(t => {
-    if (t.deadline && !t.done) {
-      const [h, m] = t.deadline.split(':').map(Number);
-      const deadlineDate = new Date(t.date);
-      deadlineDate.setHours(h, m, 0, 0);
+    if ((t.deadlineDate || t.deadline) && !t.done) {
+      let deadlineDate;
+      if (t.deadlineDate) {
+        // 有截止日期，用截止日期+时间构造
+        const [y,mo,da] = t.deadlineDate.split('-').map(Number);
+        const [h,m] = t.deadline ? t.deadline.split(':').map(Number) : [23,59];
+        deadlineDate = new Date(y, mo-1, da, h, m, 0, 0);
+      } else {
+        // 只有截止时间，按任务当天日期构造
+        const [h, m] = t.deadline.split(':').map(Number);
+        deadlineDate = new Date(t.date);
+        deadlineDate.setHours(h, m, 0, 0);
+      }
       if (deadlineDate < now) overdueTasks++;
     }
   });
@@ -1871,11 +1887,17 @@ function renderWorkMonthSummary() {
 
   // 超期未完成任务列表
   const overdueList = allTasks.filter(t => {
-    if (!t.deadline || t.done) return false;
-    const taskDate = new Date(t.date);
-    const [h, m] = t.deadline.split(':').map(Number);
-    const deadlineDate = new Date(taskDate);
-    deadlineDate.setHours(h, m, 0, 0);
+    if ((!t.deadlineDate && !t.deadline) || t.done) return false;
+    let deadlineDate;
+    if (t.deadlineDate) {
+      const [y,mo,da] = t.deadlineDate.split('-').map(Number);
+      const [h,m] = t.deadline ? t.deadline.split(':').map(Number) : [23,59];
+      deadlineDate = new Date(y, mo-1, da, h, m, 0, 0);
+    } else {
+      const [h, m] = t.deadline.split(':').map(Number);
+      deadlineDate = new Date(t.date);
+      deadlineDate.setHours(h, m, 0, 0);
+    }
     return deadlineDate < now;
   });
 
@@ -1908,7 +1930,7 @@ function renderWorkMonthSummary() {
         <div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;border-bottom:1px solid #FFCDD2;">
           <span class="task-priority priority-${t.priority}" style="font-size:10px;">${t.priority==='high'?'高':t.priority==='mid'?'中':'低'}</span>
           <span style="flex:1;">${escapeHtml(t.text)}</span>
-          <span style="font-size:11px;color:var(--text-soft);">${formatDateShort(t.date)} ⏰${t.deadline}</span>
+          <span style="font-size:11px;color:var(--text-soft);">${formatDateShort(t.date)}${t.deadlineDate?' ⏰'+formatDateShort(t.deadlineDate):''}${t.deadline?' '+t.deadline:''}</span>
         </div>`).join('')}
       ${overdueList.length > 5 ? `<div style="font-size:12px;color:var(--text-soft);text-align:center;margin-top:4px;">还有 ${overdueList.length-5} 项超期...</div>` : ''}
     </div>` : ''}
