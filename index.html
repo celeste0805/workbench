@@ -1690,10 +1690,30 @@ function formatTime(isoStr) {
 function carryOverUndoneTasks() {
   const today = formatDate(new Date());
   if (currentWorkDate === today) {
-    // 只有查看今天时才执行延续逻辑
+    // 1. 清理今天已有的错误延续副本：同名任务在更早某天已完成的话，移除这个延续副本
     const todayTasks = appData.workTasks[today] || [];
-    const carriedIds = new Set(todayTasks.filter(t => t.carriedFrom).map(t => {
-      // 尝试匹配之前日期的同名任务
+    let needClean = false;
+    const cleanedToday = todayTasks.filter(t => {
+      if (!t.carriedFrom) return true;
+      // 检查同名任务在更早是否已完成
+      for (let j = 1; j <= 14; j++) {
+        const d2 = new Date(); d2.setDate(d2.getDate() - j);
+        const dateStr2 = formatDate(d2);
+        const tasks2 = appData.workTasks[dateStr2] || [];
+        if (tasks2.some(x => x.text === t.text && x.priority === t.priority && x.done)) {
+          needClean = true;
+          return false; // 删除这个延续副本
+        }
+      }
+      return true;
+    });
+    if (needClean) {
+      appData.workTasks[today] = cleanedToday;
+    }
+
+    // 2. 执行延续逻辑
+    const currentTodayTasks = appData.workTasks[today] || [];
+    const carriedIds = new Set(currentTodayTasks.filter(t => t.carriedFrom).map(t => {
       return t.text + '|' + t.priority;
     }));
 
@@ -1707,6 +1727,20 @@ function carryOverUndoneTasks() {
         // 检查今天是否已经延续过这个任务（按文本去重）
         const key = t.text + '|' + t.priority;
         if (carriedIds.has(key)) continue;
+
+        // 检查同名的任务在更早是否已经完成 - 如果已完成就不要延续
+        let alreadyDoneInChain = false;
+        for (let j = i; j <= 7; j++) {
+          const d2 = new Date(); d2.setDate(d2.getDate() - j);
+          const dateStr2 = formatDate(d2);
+          const tasks2 = appData.workTasks[dateStr2] || [];
+          if (tasks2.some(x => x.text === t.text && x.priority === t.priority && x.done)) {
+            alreadyDoneInChain = true;
+            break;
+          }
+        }
+        if (alreadyDoneInChain) continue;
+
         carriedIds.add(key);
         // 延续到今天
         if (!appData.workTasks[today]) appData.workTasks[today] = [];
@@ -1720,8 +1754,8 @@ function carryOverUndoneTasks() {
         });
       }
     }
-    // 如果有延续的任务，保存
-    if (appData.workTasks[today].length > todayTasks.length) {
+    // 如果有变化，保存
+    if (needClean || appData.workTasks[today].length > currentTodayTasks.length) {
       save();
     }
   }
@@ -1754,8 +1788,40 @@ function toggleWorkTask(id) {
     t.done = !t.done;
     if (t.done) {
       t.doneAt = new Date().toISOString();
+      // 同步标记所有最近7天内的同名任务副本（避免延续逻辑把它们又延续回来）
+      const taskKey = (t.text || '') + '|' + (t.priority || 'mid');
+      const today = new Date();
+      for (let i = 0; i <= 7; i++) {
+        const d = new Date(today); d.setDate(d.getDate() - i);
+        const dateStr = formatDate(d);
+        const dayTasks = appData.workTasks[dateStr] || [];
+        dayTasks.forEach(other => {
+          if (other.id === t.id) return;
+          const otherKey = (other.text || '') + '|' + (other.priority || 'mid');
+          if (otherKey === taskKey && !other.done) {
+            other.done = true;
+            other.doneAt = t.doneAt;
+          }
+        });
+      }
     } else {
       delete t.doneAt;
+      // 取消完成时，也同步取消同名任务
+      const taskKey = (t.text || '') + '|' + (t.priority || 'mid');
+      const today = new Date();
+      for (let i = 0; i <= 7; i++) {
+        const d = new Date(today); d.setDate(d.getDate() - i);
+        const dateStr = formatDate(d);
+        const dayTasks = appData.workTasks[dateStr] || [];
+        dayTasks.forEach(other => {
+          if (other.id === t.id) return;
+          const otherKey = (other.text || '') + '|' + (other.priority || 'mid');
+          if (otherKey === taskKey && other.done) {
+            other.done = false;
+            delete other.doneAt;
+          }
+        });
+      }
     }
     save(); renderWorkTasks();
   }
