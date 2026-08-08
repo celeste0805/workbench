@@ -504,7 +504,7 @@ body {
 
 .data-table th {
   text-align: left;
-  padding: 8px 10px;
+  padding: 8px 6px;
   background: var(--bg-soft);
   color: var(--text-soft);
   font-weight: 600;
@@ -513,7 +513,7 @@ body {
 }
 
 .data-table td {
-  padding: 8px 10px;
+  padding: 8px 6px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1251,8 +1251,9 @@ body {
         <div class="card-title"><span class="icon">📋</span>账单明细</div>
         <select class="select" id="billMonthFilter" style="width:auto; display:inline;" onchange="renderBills()"><option value="">全部月份</option></select>
       </div>
-      <div style="overflow-x:auto;">
-        <table class="data-table"><thead><tr><th>日期</th><th>类型</th><th>分类</th><th>金额</th><th>备注</th><th>操作</th></tr></thead>
+      <div style="font-size:11px; color:var(--text-soft); margin:0 0 6px 0;">💡 点击任意一行可编辑该账单</div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <table class="data-table"><thead><tr><th>日期</th><th>类型</th><th>分类</th><th>金额</th><th>备注</th><th style="white-space:nowrap;">操作</th></tr></thead>
         <tbody id="billTableBody"></tbody></table>
       </div>
     </div>
@@ -3668,7 +3669,7 @@ function renderBillTable() {
   if (filter) bills = bills.filter(b => b.date.startsWith(filter));
   if (bills.length === 0) { tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">📋</div><p>暂无账单记录</p></div></td></tr>'; return; }
   const typeMap = { income:{text:'💰 收入',cls:'tx-sell'}, expense:{text:'💸 支出',cls:'tx-buy'}, save:{text:'🏦 存款',cls:'status-progress'} };
-  tbody.innerHTML = bills.map(b => `<tr><td>${formatDateChinese(b.date)}</td><td><span class="transaction-type ${typeMap[b.type].cls}">${typeMap[b.type].text}</span></td><td>${escapeHtml(b.category)}</td><td style="font-weight:600;color:${b.type==='income'||b.type==='save'?'var(--success)':'var(--danger)'}">${b.type==='income'||b.type==='save'?'+':'-'}¥${b.amount.toFixed(2)}</td><td style="font-size:12px;color:var(--text-soft);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.note||'—')}</td><td><button class="btn btn-soft btn-sm" onclick="openBillModal('${b.id}')">编辑</button><button class="btn-icon-sm" onclick="deleteBill('${b.id}')">🗑</button></td></tr>`).join('');
+  tbody.innerHTML = bills.map(b => `<tr style="cursor:pointer;" onclick="openBillModal('${b.id}')"><td style="white-space:nowrap;">${formatDateChinese(b.date)}</td><td><span class="transaction-type ${typeMap[b.type].cls}">${typeMap[b.type].text}</span></td><td>${escapeHtml(b.category)}</td><td style="font-weight:600;white-space:nowrap;color:${b.type==='income'||b.type==='save'?'var(--success)':'var(--danger)'}">${b.type==='income'||b.type==='save'?'+':'-'}¥${b.amount.toFixed(2)}</td><td style="font-size:12px;color:var(--text-soft);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.note||'—')}</td><td style="white-space:nowrap;" onclick="event.stopPropagation();"><button class="btn btn-soft btn-sm" style="min-width:auto;padding:4px 8px;" onclick="event.stopPropagation();openBillModal('${b.id}')">✏️</button><button class="btn-icon-sm" onclick="event.stopPropagation();deleteBill('${b.id}')">🗑</button></td></tr>`).join('');
 }
 
 function openBillModal(id) {
