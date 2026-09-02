@@ -2911,6 +2911,8 @@ function deleteOneWeight(date) { appData.weightRecords = appData.weightRecords.f
 // 宠物管理
 // ========================================
 function renderPets() {
+  // 从护理记录自动重算"上次"日期（修复旧记录不更新日期的问题）
+  if (recalcPetDates()) save();
   renderPetList();
   renderPetRecords();
 }
@@ -2991,6 +2993,7 @@ function renderPetList() {
             ${innerDewormDays !== null ? (innerDewormOverdue ? `超期${Math.abs(innerDewormDays)}天` : `还有${innerDewormDays}天`) : '未记录'}
           </div>
           <div style="font-size:10px;color:var(--text-soft);">每${p.innerDewormInterval||90}天 · 上次${lastInnerDeworm?formatDateShort(formatDate(lastInnerDeworm)):'—'}</div>
+          <button class="btn btn-soft btn-sm" style="width:100%;margin-top:6px;padding:3px 0;font-size:11px;" onclick="quickPetCare('${p.id}','innerDeworm')">✓ 今天内驱</button>
         </div>
         <div style="background:${outerDewormOverdue?'#FFF5F5':'var(--bg-soft)'};border-radius:10px;padding:10px;border-left:3px solid ${outerDewormOverdue?'var(--danger)':'var(--primary)'};">
           <div style="font-size:11px;color:var(--text-soft);">💧 外驱</div>
@@ -2998,6 +3001,7 @@ function renderPetList() {
             ${outerDewormDays !== null ? (outerDewormOverdue ? `超期${Math.abs(outerDewormDays)}天` : `还有${outerDewormDays}天`) : '未记录'}
           </div>
           <div style="font-size:10px;color:var(--text-soft);">每${p.outerDewormInterval||90}天 · 上次${lastOuterDeworm?formatDateShort(formatDate(lastOuterDeworm)):'—'}</div>
+          <button class="btn btn-soft btn-sm" style="width:100%;margin-top:6px;padding:3px 0;font-size:11px;" onclick="quickPetCare('${p.id}','outerDeworm')">✓ 今天外驱</button>
         </div>
         <div style="background:${vaccineOverdue?'#FFF5F5':'var(--bg-soft)'};border-radius:10px;padding:10px;border-left:3px solid ${vaccineOverdue?'var(--danger)':'var(--success)'};">
           <div style="font-size:11px;color:var(--text-soft);">💉 疫苗</div>
@@ -3005,6 +3009,7 @@ function renderPetList() {
             ${vaccineDays !== null ? (vaccineOverdue ? `超期${Math.abs(vaccineDays)}天` : `还有${vaccineDays}天`) : '未记录'}
           </div>
           <div style="font-size:10px;color:var(--text-soft);">每${p.vaccineInterval||365}天 · 上次${lastVaccine?formatDateShort(formatDate(lastVaccine)):'—'}</div>
+          <button class="btn btn-soft btn-sm" style="width:100%;margin-top:6px;padding:3px 0;font-size:11px;" onclick="quickPetCare('${p.id}','vaccine')">✓ 今天疫苗</button>
         </div>
         <div style="background:${bathOverdue?'#FFF5F5':'var(--bg-soft)'};border-radius:10px;padding:10px;border-left:3px solid ${bathOverdue?'var(--danger)':'var(--warning)'};">
           <div style="font-size:11px;color:var(--text-soft);">🛁 洗澡</div>
@@ -3012,10 +3017,35 @@ function renderPetList() {
             ${bathDays !== null ? (bathOverdue ? `超期${Math.abs(bathDays)}天` : `还有${bathDays}天`) : '未记录'}
           </div>
           <div style="font-size:10px;color:var(--text-soft);">每${p.bathInterval||30}天 · 上次${lastBath?formatDateShort(formatDate(lastBath)):'—'}</div>
+          <button class="btn btn-soft btn-sm" style="width:100%;margin-top:6px;padding:3px 0;font-size:11px;" onclick="quickPetCare('${p.id}','bath')">✓ 今天洗澡</button>
         </div>
       </div>
     </div>`;
   }).join('');
+}
+
+// 一键记录今天的护理（可带备注）
+function quickPetCare(petId, type) {
+  const pet = (appData.pets||[]).find(p => p.id === petId);
+  if (!pet) return;
+  const typeName = type==='innerDeworm'?'内驱':type==='outerDeworm'?'外驱':type==='vaccine'?'疫苗':'洗澡';
+  const today = formatDate(new Date());
+  showModal(`
+    <div class="modal-title">✓ 记录${typeName} <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div style="font-size:13px;color:var(--text-soft);margin-bottom:10px;">${pet.emoji||'🐾'} ${escapeHtml(pet.name)} · ${today}</div>
+    <div class="form-group"><label>备注（可选）</label><input type="text" class="input" id="qcNote" placeholder="如：使用海乐妙"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="confirmQuickPetCare('${petId}','${type}')">确认记录</button>
+  `);
+}
+
+function confirmQuickPetCare(petId, type) {
+  const note = document.getElementById('qcNote').value.trim();
+  const today = formatDate(new Date());
+  if (!appData.petRecords) appData.petRecords = [];
+  appData.petRecords.push({ id: uid(), petId, type, date: today, note });
+  recalcPetDates();
+  save(); closeModal(); renderPets();
+  showToast('已记录 ✓');
 }
 
 function openPetModal(id) {
@@ -3099,16 +3129,76 @@ function renderPetRecords() {
   }
   container.innerHTML = sorted.map(r => {
     const pet = (appData.pets||[]).find(p => p.id === r.petId);
+    const typeText = r.type==='innerDeworm'?'💊 内驱':r.type==='outerDeworm'?'💧 外驱':r.type==='deworm'?'💊 驱虫':r.type==='bath'?'🛁 洗澡':r.type==='vaccine'?'💉 疫苗':r.type==='other'?'📋 其他':'📋 '+r.type;
     return `
-    <div class="reminder-item">
+    <div class="reminder-item" style="cursor:pointer;" onclick="openPetRecordEditModal('${r.id}')">
       <div class="reminder-date"><div class="reminder-day">${new Date(r.date).getDate()}</div><div class="reminder-month">${new Date(r.date).getMonth()+1}月</div></div>
       <div class="reminder-info">
-        <div class="reminder-title">${pet ? pet.emoji||'🐾' : '🐾'} ${pet?escapeHtml(pet.name):'已删除'} · ${r.type==='deworm'?'💊 驱虫':r.type==='bath'?'🛁 洗澡':r.type==='vaccine'?'💉 疫苗':r.type==='other'?'📋 其他':'📋 '+r.type}</div>
+        <div class="reminder-title">${pet ? pet.emoji||'🐾' : '🐾'} ${pet?escapeHtml(pet.name):'已删除'} · ${typeText}</div>
         <div class="reminder-desc">${escapeHtml(r.note||'')}</div>
       </div>
-      <button class="task-delete" onclick="deletePetRecord('${r.id}')">✕</button>
+      <button class="task-delete" onclick="event.stopPropagation();deletePetRecord('${r.id}')">✕</button>
     </div>`;
   }).join('');
+}
+
+function openPetRecordEditModal(id) {
+  const r = (appData.petRecords||[]).find(x => x.id === id);
+  if (!r) return;
+  const pets = appData.pets || [];
+  const petOptions = pets.map(p => `<option value="${p.id}" ${p.id===r.petId?'selected':''}>${p.emoji||'🐾'} ${escapeHtml(p.name)}</option>`).join('');
+  showModal(`
+    <div class="modal-title">✏️ 编辑护理记录 <button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="form-row">
+      <div class="form-group"><label>宠物</label><select class="select" id="prPet">${petOptions}</select></div>
+      <div class="form-group"><label>日期</label><input type="date" class="input" id="prDate" value="${r.date}"></div>
+    </div>
+    <div class="form-group"><label>类型</label><select class="select" id="prType">
+      <option value="innerDeworm" ${r.type==='innerDeworm'?'selected':''}>💊 内驱</option>
+      <option value="outerDeworm" ${r.type==='outerDeworm'?'selected':''}>💧 外驱</option>
+      <option value="deworm" ${r.type==='deworm'?'selected':''}>💊 驱虫</option>
+      <option value="bath" ${r.type==='bath'?'selected':''}>🛁 洗澡</option>
+      <option value="vaccine" ${r.type==='vaccine'?'selected':''}>💉 疫苗</option>
+      <option value="other" ${r.type==='other'?'selected':''}>📋 其他</option>
+    </select></div>
+    <div class="form-group"><label>备注</label><input type="text" class="input" id="prNote" value="${escapeHtml(r.note||'')}" placeholder="如：使用海乐妙内驱"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="updatePetRecord('${id}')">保存修改</button>
+  `);
+}
+
+function updatePetRecord(id) {
+  const r = (appData.petRecords||[]).find(x => x.id === id);
+  if (!r) return;
+  r.petId = document.getElementById('prPet').value;
+  r.type = document.getElementById('prType').value;
+  r.date = document.getElementById('prDate').value;
+  r.note = document.getElementById('prNote').value.trim();
+  recalcPetDates();
+  save(); closeModal(); renderPets();
+  showToast('记录已更新 ✓');
+}
+
+// 从所有护理记录重新计算每只宠物的"上次"日期（新增/编辑/删除后调用）
+function recalcPetDates() {
+  const records = appData.petRecords || [];
+  let changed = false;
+  (appData.pets||[]).forEach(pet => {
+    const mine = records.filter(r => r.petId === pet.id);
+    const latest = (types) => {
+      const dates = mine.filter(r => types.includes(r.type)).map(r => r.date).sort();
+      return dates.length ? dates[dates.length-1] : null;
+    };
+    const inner = latest(['innerDeworm','deworm']);
+    const outer = latest(['outerDeworm']);
+    const bath = latest(['bath']);
+    const vaccine = latest(['vaccine']);
+    // 只在算出有效日期且与当前不同时更新，避免清掉用户手动设置的日期
+    if (inner && inner !== pet.lastInnerDeworm) { pet.lastInnerDeworm = inner; changed = true; }
+    if (outer && outer !== pet.lastOuterDeworm) { pet.lastOuterDeworm = outer; changed = true; }
+    if (bath && bath !== pet.lastBath) { pet.lastBath = bath; changed = true; }
+    if (vaccine && vaccine !== pet.lastVaccine) { pet.lastVaccine = vaccine; changed = true; }
+  });
+  return changed;
 }
 
 function openPetRecordModal() {
@@ -3122,8 +3212,15 @@ function openPetRecordModal() {
       <div class="form-group"><label>宠物</label><select class="select" id="prPet">${petOptions}</select></div>
       <div class="form-group"><label>日期</label><input type="date" class="input" id="prDate" value="${today}"></div>
     </div>
-    <div class="form-group"><label>类型</label><select class="select" id="prType"><option value="deworm">💊 驱虫</option><option value="bath">🛁 洗澡</option><option value="vaccine">💉 疫苗</option><option value="other">📋 其他</option></select></div>
-    <div class="form-group"><label>备注</label><input type="text" class="input" id="prNote" placeholder="如：使用XX品牌驱虫药"></div>
+    <div class="form-group"><label>类型</label><select class="select" id="prType" onchange="updateDewormOptions()">
+      <option value="innerDeworm">💊 内驱</option>
+      <option value="outerDeworm">💧 外驱</option>
+      <option value="deworm">💊 驱虫（旧记录）</option>
+      <option value="bath">🛁 洗澡</option>
+      <option value="vaccine">💉 疫苗</option>
+      <option value="other">📋 其他</option>
+    </select></div>
+    <div class="form-group"><label>备注</label><input type="text" class="input" id="prNote" placeholder="如：使用海乐妙内驱"></div>
     <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="savePetRecord()">保存记录</button>
   `);
 }
@@ -3136,13 +3233,8 @@ function savePetRecord() {
   if (!appData.petRecords) appData.petRecords = [];
   appData.petRecords.push({ id: uid(), petId, type, date, note });
 
-  // 自动更新宠物的上次日期
-  const pet = (appData.pets||[]).find(p => p.id === petId);
-  if (pet) {
-    if (type === 'deworm') pet.lastDeworm = date;
-    if (type === 'bath') pet.lastBath = date;
-    if (type === 'vaccine') pet.lastVaccine = date;
-  }
+  // 重新计算宠物的上次日期
+  recalcPetDates();
 
   save(); closeModal(); renderPets();
   showToast('护理记录已保存 ✓');
@@ -3151,7 +3243,8 @@ function savePetRecord() {
 function deletePetRecord(id) {
   if (!confirm('确定删除这条记录吗？')) return;
   appData.petRecords = (appData.petRecords||[]).filter(r => r.id !== id);
-  save(); renderPetRecords();
+  recalcPetDates();
+  save(); renderPets();
 }
 
 // ========================================
